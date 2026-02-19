@@ -547,10 +547,43 @@ p {
 }
 
 .drag-line {
-  width: 32px;
+  width: 24px;
+  height: 4px;
+  background: transparent;
+  position: relative;
+  transition: transform var(--transition);
+}
+
+.drag-line::before,
+.drag-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 14px;
   height: 3px;
   background: var(--border);
   border-radius: 2px;
+  transition: transform var(--transition);
+}
+
+.drag-line::before {
+  left: 0;
+  transform-origin: right center;
+  transform: rotate(20deg);
+}
+
+.drag-line::after {
+  right: 0;
+  transform-origin: left center;
+  transform: rotate(-20deg);
+}
+
+.is-expanded .drag-line::before {
+  transform: rotate(-20deg);
+}
+
+.is-expanded .drag-line::after {
+  transform: rotate(20deg);
 }
 
 .day-dot {
