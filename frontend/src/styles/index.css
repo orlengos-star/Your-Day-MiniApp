@@ -8,10 +8,12 @@
 
 /* ── CSS Variables (light mode defaults, overridden by Telegram theme) ───── */
 :root {
-  --bg: #F4F4F2;
+  --bg: #F8F8F6;
+  /* Brighter background */
   --surface: #FFFFFF;
-  --surface-2: #EEEEED;
-  --border: #E0E0DE;
+  --surface-2: #F2F2F0;
+  /* Brighter secondary surface */
+  --border: #E8E8E6;
   --accent: #5B7FA6;
   --accent-light: #D6E4F0;
   --accent-dark: #3D5A7A;
@@ -536,7 +538,7 @@ p {
 .calendar-drag-handle {
   display: flex;
   justify-content: center;
-  padding: 8px 0 4px;
+  padding: 15px 0 4px;
   cursor: pointer;
   opacity: 0.5;
   transition: opacity var(--transition);
@@ -547,7 +549,7 @@ p {
 }
 
 .drag-line {
-  width: 24px;
+  width: 48px;
   height: 4px;
   background: transparent;
   position: relative;
@@ -559,7 +561,7 @@ p {
   content: '';
   position: absolute;
   top: 0;
-  width: 14px;
+  width: 26px;
   height: 3px;
   background: var(--border);
   border-radius: 2px;
