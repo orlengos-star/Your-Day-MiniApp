@@ -77,12 +77,25 @@ app.get('*', (req, res) => {
 
 // ── Start server ──────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
-    console.log(`🌿 Emotional Journal server running on http://localhost:${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🌿 Emotional Journal server running on port ${PORT}`);
     console.log(`📱 Mini App URL: ${MINI_APP_URL}`);
 
-    const bot = initBot(MINI_APP_URL);
-    if (bot) initScheduler(bot);
+    try {
+        const bot = initBot(MINI_APP_URL);
+        if (bot) {
+            initScheduler(bot);
+            console.log('🤖 Bot and Scheduler initialized successfully');
+        }
+    } catch (err) {
+        console.error('❌ Failed to initialize bot/scheduler:', err);
+        // We don't exit(1) here to allow the web server (and healthcheck) to stay up
+    }
+});
+
+server.on('error', (err) => {
+    console.error('❌ Server failed to start:', err);
+    process.exit(1);
 });
 
 module.exports = app;

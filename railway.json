@@ -3,7 +3,6 @@
         "builder": "NIXPACKS"
     },
     "deploy": {
-        "startCommand": "node backend/server.js",
-        "healthcheckPath": "/health"
+        "startCommand": "node backend/server.js"
     }
 }

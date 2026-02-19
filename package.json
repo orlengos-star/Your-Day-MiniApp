@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Emotional Journal Telegram Mini App",
     "scripts": {
-        "build": "npm install && cd frontend && npm install && npm run build",
+        "build": "cd frontend && npm install && npm run build",
         "start": "node backend/server.js",
         "install-all": "npm install && cd frontend && npm install"
     },
