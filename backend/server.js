@@ -28,7 +28,7 @@ const relationshipsRouter = require('./routes/relationships');
 const notificationsRouter = require('./routes/notifications');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const MINI_APP_URL = process.env.MINI_APP_URL || `http://localhost:${PORT}`;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
