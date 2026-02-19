@@ -27,7 +27,7 @@ function initBot(miniAppUrl) {
         if (token) {
             // Handle invite token
             const invite = db.prepare(
-                'SELECT * FROM invite_tokens WHERE token = ? AND usedAt IS NULL AND expiresAt > datetime("now")'
+                'SELECT * FROM invite_tokens WHERE token = ? AND usedAt IS NULL AND expiresAt > datetime('now')'
             ).get(token);
 
             if (!invite) {
