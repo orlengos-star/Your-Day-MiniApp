@@ -29,7 +29,12 @@ const notificationsRouter = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MINI_APP_URL = process.env.MINI_APP_URL || `http://localhost:${PORT}`;
+let MINI_APP_URL = process.env.MINI_APP_URL || `http://localhost:${PORT}`;
+
+// In production, ensure the URL starts with https (required by Telegram)
+if (process.env.NODE_ENV === 'production' && MINI_APP_URL.startsWith('http:')) {
+    console.warn('⚠️ MINI_APP_URL is using http but should be https for Telegram buttons.');
+}
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
