@@ -3,9 +3,16 @@
     "version": "1.0.0",
     "description": "Emotional Journal Telegram Mini App",
     "scripts": {
-        "build": "cd frontend && npm install && npm run build",
+        "build": "npm install && cd frontend && npm install && npm run build",
         "start": "node backend/server.js",
-        "install-all": "cd backend && npm install && cd ../frontend && npm install"
+        "install-all": "npm install && cd frontend && npm install"
+    },
+    "dependencies": {
+        "better-sqlite3": "^12.6.2",
+        "cors": "^2.8.6",
+        "express": "^4.22.1",
+        "node-cron": "^4.2.1",
+        "node-telegram-bot-api": "^0.67.0"
     },
     "engines": {
         "node": ">=18.0.0"
