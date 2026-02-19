@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+frontend/dist/
+
+# Database (local only)
+backend/journal.db
+backend/journal.db-shm
+backend/journal.db-wal
+
+# Environment variables
+backend/.env
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
