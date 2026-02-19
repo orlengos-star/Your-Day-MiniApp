@@ -238,6 +238,7 @@ export default function TherapistView({ startParam, theme, onThemeChange }) {
                                             selectedDate={selectedDate}
                                             ratings={ratings}
                                             entries={entries}
+                                            forceCollapse={!!selectedEntry}
                                         />
                                     </div>
 

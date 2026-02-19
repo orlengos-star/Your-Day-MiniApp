@@ -168,6 +168,7 @@ export default function ClientView({ startParam, theme, onThemeChange }) {
                         selectedDate={selectedDate}
                         ratings={ratings}
                         entries={allMonthEntries}
+                        forceCollapse={!!editingEntry}
                     />
                 </div>
 
