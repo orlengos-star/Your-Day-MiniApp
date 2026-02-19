@@ -29,6 +29,10 @@ const notificationsRouter = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+// ── Health check ──────────────────────────────────────────────────────────────
+
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
 const MINI_APP_URL = process.env.MINI_APP_URL || `http://localhost:${PORT}`;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
@@ -49,9 +53,6 @@ app.use('/api/ratings', ratingsRouter);
 app.use('/api/relationships', relationshipsRouter);
 app.use('/api/notifications', notificationsRouter);
 
-// ── Health check ──────────────────────────────────────────────────────────────
-
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // ── Serve React frontend (built files) ───────────────────────────────────────
 
@@ -77,7 +78,7 @@ app.get('*', (req, res) => {
 
 // ── Start server ──────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🌿 Emotional Journal server running on http://localhost:${PORT}`);
     console.log(`📱 Mini App URL: ${MINI_APP_URL}`);
 
