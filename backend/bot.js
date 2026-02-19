@@ -27,7 +27,7 @@ function initBot(miniAppUrl) {
         if (token) {
             // Handle invite token
             const invite = db.prepare(
-                'SELECT * FROM invite_tokens WHERE token = ? AND usedAt IS NULL AND expiresAt > datetime('now')'
+                "SELECT * FROM invite_tokens WHERE token = ? AND usedAt IS NULL AND expiresAt > datetime('now')"
             ).get(token);
 
             if (!invite) {
@@ -64,7 +64,7 @@ function initBot(miniAppUrl) {
             }
 
             db.prepare('INSERT INTO relationships (clientId, therapistId) VALUES (?, ?)').run(clientId, therapistId);
-            db.prepare('UPDATE invite_tokens SET usedAt = datetime("now") WHERE id = ?').run(invite.id);
+            db.prepare("UPDATE invite_tokens SET usedAt = datetime('now') WHERE id = ?").run(invite.id);
 
             const role = invite.inviteType === 'invite_therapist' ? 'therapist' : 'client';
             bot.sendMessage(chatId,
