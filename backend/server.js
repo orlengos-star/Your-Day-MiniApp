@@ -49,6 +49,8 @@ app.use(express.json());
 // ── API Routes (protected by Telegram initData auth) ─────────────────────────
 
 app.use('/api', validateInitData);
+app.get('/api/me', (req, res) => res.json(req.telegramUser));
+
 app.use('/api/entries', entriesRouter);
 app.use('/api/ratings', ratingsRouter);
 app.use('/api/relationships', relationshipsRouter);

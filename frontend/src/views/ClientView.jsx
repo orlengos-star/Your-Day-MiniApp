@@ -7,7 +7,7 @@ import DayRating from '../components/DayRating.jsx';
 import NotificationSettings from '../components/NotificationSettings.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 
-export default function ClientView({ startParam, theme, onThemeChange }) {
+export default function ClientView({ startParam, theme, onThemeChange, telegramColorScheme }) {
     const today = new Date().toISOString().split('T')[0];
     const currentMonthDefault = today.slice(0, 7);
 
@@ -153,7 +153,7 @@ export default function ClientView({ startParam, theme, onThemeChange }) {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <ThemeToggle theme={theme} onChange={onThemeChange} />
+                    <ThemeToggle theme={theme} onChange={onThemeChange} telegramColorScheme={telegramColorScheme} />
                     <button className="icon-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
                 </div>
             </header>

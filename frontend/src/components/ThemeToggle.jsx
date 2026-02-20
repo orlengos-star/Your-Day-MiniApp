@@ -1,10 +1,5 @@
 const STORAGE_KEY = 'ej-theme';
 
-// Modes: 'light' | 'dark' | 'auto'
-const ICONS = { light: '☀️', dark: '🌙', auto: '⚙️' };
-const LABELS = { light: 'Light', dark: 'Dark', auto: 'Auto' };
-const CYCLE = { light: 'dark', dark: 'auto', auto: 'light' };
-
 export function getStoredTheme() {
     return localStorage.getItem(STORAGE_KEY) || 'auto';
 }
@@ -23,23 +18,33 @@ export function applyTheme(mode, telegramColorScheme) {
     }
 }
 
-export default function ThemeToggle({ theme, onChange }) {
-    const next = CYCLE[theme] || 'auto';
+export default function ThemeToggle({ theme, onChange, telegramColorScheme }) {
+    // Determine the current visual state. 
+    // If auto, we look at the telegramColorScheme or system pref.
+    const isActuallyDark =
+        theme === 'dark' ||
+        (theme === 'auto' && (telegramColorScheme === 'dark' ||
+            window.matchMedia?.('(prefers-color-scheme: dark)').matches));
 
-    function handleClick() {
-        const newTheme = next;
+    function handleToggle() {
+        const newTheme = isActuallyDark ? 'light' : 'dark';
         localStorage.setItem(STORAGE_KEY, newTheme);
         onChange(newTheme);
     }
 
     return (
-        <button
-            className="icon-btn theme-toggle-btn"
-            onClick={handleClick}
-            aria-label={`Theme: ${LABELS[theme]}. Click to switch to ${LABELS[next]}`}
-            title={`${LABELS[theme]} mode — click to switch`}
-        >
-            <span className="theme-toggle-icon">{ICONS[theme]}</span>
-        </button>
+        <label className="theme-toggle" title={`Currently ${theme} mode`}>
+            <input
+                type="checkbox"
+                checked={isActuallyDark}
+                onChange={handleToggle}
+                aria-label="Toggle dark mode"
+            />
+            <div className="theme-toggle-slider">
+                <span className="sun-icon">☀️</span>
+                <span className="moon-icon">🌙</span>
+                <div className="toggle-knob" />
+            </div>
+        </label>
     );
 }
