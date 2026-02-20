@@ -218,56 +218,6 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                         ))
                     )}
                 </div>
-
-                {/* Therapist connection */}
-                <div className="section">
-                    {therapist === undefined ? null : therapist ? (
-                        <div className="card">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="font-semibold text-sm">🤝 {therapist.name}</div>
-                                    <div className="text-xs text-muted mt-1">Your therapist · connected {new Date(therapist.connectedAt).toLocaleDateString()}</div>
-                                </div>
-                                <button className="btn btn-ghost btn-sm" onClick={handleDisconnect}>Disconnect</button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="invite-banner">
-                            <h3>Connect with your therapist</h3>
-                            <p>Share a private invite link so your therapist can view your journal and add notes.</p>
-                            {inviteLink ? (
-                                <div>
-                                    <div style={{
-                                        background: 'var(--surface)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        padding: '0.5rem 0.75rem',
-                                        fontSize: '0.75rem',
-                                        wordBreak: 'break-all',
-                                        marginBottom: '0.75rem',
-                                        color: 'var(--text-2)'
-                                    }}>
-                                        {inviteLink}
-                                    </div>
-                                    <button
-                                        className="btn btn-primary btn-sm"
-                                        onClick={() => navigator.clipboard?.writeText(inviteLink)}
-                                    >
-                                        📋 Copy link
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    className="btn btn-primary btn-sm"
-                                    onClick={handleInviteTherapist}
-                                    disabled={inviteLoading}
-                                >
-                                    {inviteLoading ? 'Generating…' : '🔗 Invite therapist'}
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
             </div>
 
             {/* Entry editor drawer */}
@@ -283,7 +233,14 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
 
             {/* Settings drawer */}
             {showSettings && (
-                <NotificationSettings onClose={() => setShowSettings(false)} />
+                <NotificationSettings
+                    onClose={() => setShowSettings(false)}
+                    therapist={therapist}
+                    onInviteTherapist={handleInviteTherapist}
+                    inviteLink={inviteLink}
+                    inviteLoading={inviteLoading}
+                    onDisconnect={handleDisconnect}
+                />
             )}
         </>
     );

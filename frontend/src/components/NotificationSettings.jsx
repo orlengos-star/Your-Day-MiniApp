@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api.js';
 
-export default function NotificationSettings({ onClose }) {
+export default function NotificationSettings({
+    onClose,
+    therapist,
+    onInviteTherapist,
+    inviteLink,
+    inviteLoading,
+    onDisconnect
+}) {
     const [settings, setSettings] = useState(null);
     const [saving, setSaving] = useState(false);
 
@@ -41,11 +48,12 @@ export default function NotificationSettings({ onClose }) {
                 <div className="drawer-handle" />
 
                 <div className="flex items-center justify-between mb-4">
-                    <h3>Notification Settings</h3>
+                    <h3>Settings</h3>
                     <button className="icon-btn" onClick={onClose}>✕</button>
                 </div>
 
-                <div className="card">
+                <div className="section-title mb-2">Notifications</div>
+                <div className="card mb-4">
                     {/* Enable/disable */}
                     <div className="settings-row">
                         <div>
@@ -80,10 +88,57 @@ export default function NotificationSettings({ onClose }) {
                     ) : null}
                 </div>
 
-                {/* Therapist-specific settings */}
+                {/* Therapist Connection */}
+                <div className="section-title mb-2">Therapist</div>
+                <div className="card mb-4">
+                    {therapist ? (
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="settings-label">Connected: {therapist.name}</div>
+                                <div className="settings-sublabel">Connected on {new Date(therapist.connectedAt).toLocaleDateString()}</div>
+                            </div>
+                            <button className="btn btn-ghost btn-sm" onClick={onDisconnect}>Disconnect</button>
+                        </div>
+                    ) : (
+                        <div>
+                            <div className="settings-label">Not connected</div>
+                            <div className="settings-sublabel mb-3">Invite your therapist to view your journal</div>
+
+                            {inviteLink ? (
+                                <div style={{
+                                    background: 'var(--surface-2)',
+                                    padding: '0.75rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    fontSize: '0.75rem',
+                                    wordBreak: 'break-all',
+                                    marginBottom: '0.5rem',
+                                    color: 'var(--text-2)'
+                                }}>
+                                    {inviteLink}
+                                    <button
+                                        className="btn btn-primary btn-sm w-full mt-2"
+                                        onClick={() => navigator.clipboard?.writeText(inviteLink)}
+                                    >
+                                        📋 Copy Invite Link
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    className="btn btn-primary btn-sm w-full"
+                                    onClick={onInviteTherapist}
+                                    disabled={inviteLoading}
+                                >
+                                    {inviteLoading ? 'Generating…' : '🔗 Generate Invite Link'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Therapist-specific settings (if user is therapist) */}
                 {settings.therapistMode !== undefined && (
                     <div className="card mt-3">
-                        <div className="section-title mb-2">Therapist Notifications</div>
+                        <div className="section-title mb-2">Professional Mode</div>
 
                         <div className="settings-row">
                             <div>
