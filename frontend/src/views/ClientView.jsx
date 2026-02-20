@@ -180,15 +180,18 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                             {selectedDate === today ? "Today's entries" : dateLabel}
                         </span>
                         <div className="flex items-center gap-2">
-                            <DayRating
-                                value={dayRating?.clientRating || null}
-                                onChange={handleRatingChange}
-                            />
                             <span className="text-xs text-muted">{dayEntries.length} {dayEntries.length === 1 ? 'entry' : 'entries'}</span>
                             {dayEntries.length > 0 && (
                                 <button className="btn btn-secondary btn-sm" onClick={() => setEditingEntry('new')}>+ Add entry</button>
                             )}
                         </div>
+                    </div>
+
+                    <div className="flex justify-center mb-4">
+                        <DayRating
+                            value={dayRating?.clientRating || null}
+                            onChange={handleRatingChange}
+                        />
                     </div>
 
                     {loading ? (

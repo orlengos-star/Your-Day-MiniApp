@@ -250,17 +250,20 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                                 {selectedDate === today ? "Today's entries" : dateLabel}
                                             </span>
                                             <div className="flex items-center gap-2">
-                                                {dayRating?.clientRating && (
-                                                    <span className="text-xs text-muted" title="Client's rating">
-                                                        Client: {'😔😕😐🙂😊'[dayRating.clientRating - 1]}
-                                                    </span>
-                                                )}
-                                                <DayRating
-                                                    value={dayRating?.therapistRating || null}
-                                                    onChange={handleTherapistRating}
-                                                />
                                                 <span className="text-xs text-muted">{dayEntries.length} {dayEntries.length === 1 ? 'entry' : 'entries'}</span>
                                             </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-center gap-3 mb-4">
+                                            {dayRating?.clientRating && (
+                                                <span className="text-xs text-muted" title="Client's rating">
+                                                    Client rated their day: {'😔😕😐🙂😊'[dayRating.clientRating - 1]}
+                                                </span>
+                                            )}
+                                            <DayRating
+                                                value={dayRating?.therapistRating || null}
+                                                onChange={handleTherapistRating}
+                                            />
                                         </div>
 
                                         {loading ? (
