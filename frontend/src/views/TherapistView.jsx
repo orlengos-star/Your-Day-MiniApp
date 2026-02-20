@@ -242,19 +242,6 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                         />
                                     </div>
 
-                                    {/* Therapist private rating */}
-                                    <div className="card">
-                                        <DayRating
-                                            value={dayRating?.therapistRating || null}
-                                            onChange={handleTherapistRating}
-                                            label={`Your private rating for ${selectedDate === today ? 'today' : dateLabel}`}
-                                        />
-                                        {dayRating?.clientRating && (
-                                            <div className="text-xs text-muted mt-2" style={{ textAlign: 'center' }}>
-                                                Client's own rating: {'😔😕😐🙂😊'[dayRating.clientRating - 1]} ({dayRating.clientRating}/5)
-                                            </div>
-                                        )}
-                                    </div>
 
                                     {/* Entries */}
                                     <div className="section">
@@ -262,7 +249,18 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                             <span className="section-title">
                                                 {selectedDate === today ? "Today's entries" : dateLabel}
                                             </span>
-                                            <span className="text-xs text-muted">{dayEntries.length} {dayEntries.length === 1 ? 'entry' : 'entries'}</span>
+                                            <div className="flex items-center gap-2">
+                                                {dayRating?.clientRating && (
+                                                    <span className="text-xs text-muted" title="Client's rating">
+                                                        Client: {'😔😕😐🙂😊'[dayRating.clientRating - 1]}
+                                                    </span>
+                                                )}
+                                                <DayRating
+                                                    value={dayRating?.therapistRating || null}
+                                                    onChange={handleTherapistRating}
+                                                />
+                                                <span className="text-xs text-muted">{dayEntries.length} {dayEntries.length === 1 ? 'entry' : 'entries'}</span>
+                                            </div>
                                         </div>
 
                                         {loading ? (
