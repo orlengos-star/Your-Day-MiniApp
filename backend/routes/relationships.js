@@ -27,7 +27,7 @@ router.post('/invite', (req, res) => {
     const botUsername = process.env.BOT_USERNAME || 'your_bot';
     const link = `https://t.me/${botUsername}?start=${token}`;
 
-    res.json({ token, link, expiresAt });
+    res.json({ token, link });
 });
 
 // GET /api/relationships/invite/:token — preview invite (who sent it)
