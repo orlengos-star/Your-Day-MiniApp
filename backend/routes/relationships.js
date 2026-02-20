@@ -33,7 +33,7 @@ router.post('/invite', (req, res) => {
 // GET /api/relationships/invite/:token — preview invite (who sent it)
 router.get('/invite/:token', (req, res) => {
     const invite = db.prepare(
-        'SELECT * FROM invite_tokens WHERE token = ? AND usedAt IS NULL AND expiresAt > datetime("now")'
+        "SELECT * FROM invite_tokens WHERE token = ? AND usedAt IS NULL AND expiresAt > datetime('now')"
     ).get(req.params.token);
 
     if (!invite) return res.status(404).json({ error: 'Invalid or expired invite' });

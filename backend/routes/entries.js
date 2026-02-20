@@ -116,19 +116,19 @@ router.put('/:id', (req, res) => {
 
     if (isOwner && text !== undefined) {
         db.prepare(
-            'UPDATE journal_entries SET text = ?, updatedAt = datetime("now") WHERE id = ?'
+            "UPDATE journal_entries SET text = ?, updatedAt = datetime('now') WHERE id = ?"
         ).run(text.trim(), entry.id);
     }
 
     if (isTherapist) {
         if (therapistComments !== undefined) {
             db.prepare(
-                'UPDATE journal_entries SET therapistComments = ?, updatedAt = datetime("now") WHERE id = ?'
+                "UPDATE journal_entries SET therapistComments = ?, updatedAt = datetime('now') WHERE id = ?"
             ).run(therapistComments, entry.id);
         }
         if (isHighlighted !== undefined) {
             db.prepare(
-                'UPDATE journal_entries SET isHighlighted = ?, updatedAt = datetime("now") WHERE id = ?'
+                "UPDATE journal_entries SET isHighlighted = ?, updatedAt = datetime('now') WHERE id = ?"
             ).run(isHighlighted ? 1 : 0, entry.id);
         }
     }

@@ -49,7 +49,7 @@ function initBot(miniAppUrl) {
                 clientId = invite.inviterId;
                 therapistId = user.id;
                 // Promote accepting user to therapist if needed
-                db.prepare('UPDATE users SET role = "therapist" WHERE id = ?').run(user.id);
+                db.prepare("UPDATE users SET role = 'therapist' WHERE id = ?").run(user.id);
             } else {
                 clientId = user.id;
                 therapistId = invite.inviterId;
