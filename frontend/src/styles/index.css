@@ -124,23 +124,32 @@ p {
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 .app-container {
-  max-width: 480px;
+  width: 100%;
+  max-width: 540px;
   margin: 0 auto;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.03);
+}
+
+@media (min-width: 541px) {
+  .app-container {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
 }
 
 .page {
   flex: 1;
-  padding: 0 1rem 6rem;
+  padding: 0 1.25rem 6rem;
   overflow-y: auto;
 }
 
 /* ── Header ──────────────────────────────────────────────────────────────── */
 .app-header {
-  padding: 1.25rem 1rem 0.75rem;
+  padding: 1.25rem 1.25rem 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -717,7 +726,8 @@ p {
 }
 
 .rating-capsule.is-expanded {
-  min-width: 300px;
+  width: 100%;
+  max-width: 320px;
   background: var(--surface);
   box-shadow: var(--shadow-md);
   padding: 4px 8px;
