@@ -19,11 +19,10 @@ router.post('/invite', (req, res) => {
     }
 
     const token = uuidv4().replace(/-/g, '');
-    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
     db.prepare(
-        'INSERT INTO invite_tokens (token, inviterId, inviteType, expiresAt) VALUES (?, ?, ?, ?)'
-    ).run(token, user.id, inviteType, expiresAt);
+        "INSERT INTO invite_tokens (token, inviterId, inviteType, expiresAt) VALUES (?, ?, ?, datetime('now', '+2 days'))"
+    ).run(token, user.id, inviteType);
 
     const botUsername = process.env.BOT_USERNAME || 'your_bot';
     const link = `https://t.me/${botUsername}?start=${token}`;

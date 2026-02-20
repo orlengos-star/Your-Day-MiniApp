@@ -20,7 +20,7 @@ function initBot(miniAppUrl) {
         const chatId = msg.chat.id;
         const telegramId = String(msg.from.id);
         const name = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ');
-        const token = match[1];
+        const token = match[1]?.trim();
 
         const user = upsertUser(telegramId, name);
 
