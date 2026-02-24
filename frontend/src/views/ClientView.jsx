@@ -7,7 +7,7 @@ import DayRating from '../components/DayRating.jsx';
 import NotificationSettings from '../components/NotificationSettings.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 
-export default function ClientView({ startParam, theme, onThemeChange, telegramColorScheme }) {
+export default function ClientView({ startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
     const today = new Date().toISOString().split('T')[0];
     const currentMonthDefault = today.slice(0, 7);
 
@@ -117,8 +117,9 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
             setInviteLink(link);
             // Try to use Telegram share sheet
             if (window.Telegram?.WebApp?.openTelegramLink) {
+                const shareMsg = lang === 'ru' ? 'Станьте моим терапевтом в приложении "Мой Дневник" 🌿' : 'Join my Emotional Journal as my therapist 🌿';
                 window.Telegram.WebApp.openTelegramLink(
-                    `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join my Emotional Journal as my therapist 🌿')}`
+                    `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareMsg)}`
                 );
             }
         } catch (err) {
@@ -129,7 +130,7 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
     }
 
     async function handleDisconnect() {
-        if (!therapist || !confirm('Disconnect from your therapist?')) return;
+        if (!therapist || !confirm(lang === 'ru' ? 'Отключиться от терапевта?' : 'Disconnect from your therapist?')) return;
         try {
             await api.relationships.disconnect(therapist.relationshipId);
             setTherapist(null);
@@ -138,7 +139,7 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
         }
     }
 
-    const dateLabel = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-GB', {
+    const dateLabel = new Date(selectedDate + 'T12:00:00').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', {
         weekday: 'long', day: 'numeric', month: 'long'
     });
 
@@ -147,14 +148,14 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
             {/* Header */}
             <header className="app-header">
                 <div>
-                    <h1>🌿 My Journal</h1>
+                    <h1>🌿 {t('appTitle')}</h1>
                     <div className="header-subtitle">
-                        {therapist ? `Connected with ${therapist.name}` : 'Personal journal'}
+                        {therapist ? t('connectedWith', therapist.name) : t('personalJournal')}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <ThemeToggle theme={theme} onChange={onThemeChange} telegramColorScheme={telegramColorScheme} />
-                    <button className="icon-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
+                    <button className="icon-btn" onClick={() => setShowSettings(true)} aria-label={t('settings')}>⚙️</button>
                 </div>
             </header>
 
@@ -169,6 +170,7 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                         ratings={ratings}
                         entries={allMonthEntries}
                         forceCollapse={!!editingEntry}
+                        lang={lang}
                     />
                 </div>
 
@@ -177,12 +179,12 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                 <div className="section">
                     <div className="section-header">
                         <span className="section-title">
-                            {selectedDate === today ? "Today's entries" : dateLabel}
+                            {selectedDate === today ? t('todaysEntries') : dateLabel}
                         </span>
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted">{dayEntries.length} {dayEntries.length === 1 ? 'entry' : 'entries'}</span>
+                            <span className="text-xs text-muted">{t('entriesCount', dayEntries.length)}</span>
                             {dayEntries.length > 0 && (
-                                <button className="btn btn-secondary btn-sm" onClick={() => setEditingEntry('new')}>+ Add entry</button>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setEditingEntry('new')}>+ {t('addEntry')}</button>
                             )}
                         </div>
                     </div>
@@ -191,6 +193,7 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                         <DayRating
                             value={dayRating?.clientRating || null}
                             onChange={handleRatingChange}
+                            t={t}
                         />
                     </div>
 
@@ -203,12 +206,12 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                     ) : dayEntries.length === 0 ? (
                         <div className="empty-state">
                             <div className="empty-state-icon">📝</div>
-                            <h3>No entries yet</h3>
+                            <h3>{t('noEntries')}</h3>
                             <button
                                 className="btn btn-primary mt-4"
                                 onClick={() => setEditingEntry('new')}
                             >
-                                + Add entry
+                                + {t('addEntry')}
                             </button>
                         </div>
                     ) : (
@@ -217,6 +220,8 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                                 key={entry.id}
                                 entry={entry}
                                 onClick={setEditingEntry}
+                                t={t}
+                                lang={lang}
                             />
                         ))
                     )}
@@ -231,6 +236,8 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                     onSave={handleEntrySaved}
                     onClose={() => setEditingEntry(null)}
                     onDelete={handleEntryDeleted}
+                    t={t}
+                    lang={lang}
                 />
             )}
 
@@ -243,6 +250,9 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
                     inviteLink={inviteLink}
                     inviteLoading={inviteLoading}
                     onDisconnect={handleDisconnect}
+                    lang={lang}
+                    onLangChange={onLangChange}
+                    t={t}
                 />
             )}
         </>

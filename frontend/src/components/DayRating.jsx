@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 
 const RATINGS = [
-    { value: 1, emoji: '😔', label: 'Negative', color: 'var(--rating-1)' },
-    { value: 2, emoji: '😕', label: 'Low', color: 'var(--rating-2)' },
-    { value: 3, emoji: '😐', label: 'Neutral', color: 'var(--rating-3)' },
-    { value: 4, emoji: '🙂', label: 'Good', color: 'var(--rating-4)' },
-    { value: 5, emoji: '😊', label: 'Positive', color: 'var(--rating-5)' },
+    { value: 1, emoji: '😔', color: 'var(--rating-1)' },
+    { value: 2, emoji: '😕', color: 'var(--rating-2)' },
+    { value: 3, emoji: '😐', color: 'var(--rating-3)' },
+    { value: 4, emoji: '🙂', color: 'var(--rating-4)' },
+    { value: 5, emoji: '😊', color: 'var(--rating-5)' },
 ];
 
-export default function DayRating({ value, onChange, label = 'How was your day?', readOnly = false }) {
+export default function DayRating({ value, onChange, readOnly = false, t }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Auto-collapse when value is selected from outside or internally
@@ -16,7 +16,9 @@ export default function DayRating({ value, onChange, label = 'How was your day?'
         setIsExpanded(false);
     }, [value]);
 
+    const ratingLabels = t('ratingLabels');
     const selectedRating = RATINGS.find(r => r.value === value);
+    const selectedLabel = selectedRating ? ratingLabels[selectedRating.value - 1] : '';
 
     const handleRatingSelect = (val) => {
         if (readOnly) return;
@@ -35,11 +37,11 @@ export default function DayRating({ value, onChange, label = 'How was your day?'
                     {selectedRating ? (
                         <div className="flex items-center gap-2">
                             <span className="text-lg">{selectedRating.emoji}</span>
-                            <span className="font-medium text-sm">Feeling {selectedRating.label}</span>
+                            <span className="font-medium text-sm">{t('feeling', selectedLabel)}</span>
                         </div>
                     ) : (
                         <div className="flex items-center gap-2 text-muted">
-                            <span className="text-sm">Rate your day</span>
+                            <span className="text-sm">{t('rateDay')}</span>
                             <span className="text-xs">➕</span>
                         </div>
                     )}
@@ -52,8 +54,8 @@ export default function DayRating({ value, onChange, label = 'How was your day?'
                             className={`rating-circle ${value === r.value ? 'is-active' : ''}`}
                             style={{ backgroundColor: r.color }}
                             onClick={() => handleRatingSelect(r.value)}
-                            aria-label={r.label}
-                            title={r.label}
+                            aria-label={ratingLabels[r.value - 1]}
+                            title={ratingLabels[r.value - 1]}
                         >
                             <span className="rating-circle-emoji">{r.emoji}</span>
                         </button>
@@ -61,7 +63,7 @@ export default function DayRating({ value, onChange, label = 'How was your day?'
                     <button
                         className="rating-cancel"
                         onClick={() => setIsExpanded(false)}
-                        aria-label="Cancel"
+                        aria-label={t('cancel')}
                     >
                         ✕
                     </button>

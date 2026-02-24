@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../api.js';
 
-export default function EntryEditor({ entry, date, onSave, onClose, onDelete }) {
+export default function EntryEditor({ entry, date, onSave, onClose, onDelete, t, lang }) {
     const [text, setText] = useState(entry?.text || '');
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -57,7 +57,7 @@ export default function EntryEditor({ entry, date, onSave, onClose, onDelete }) 
         }
     }
 
-    const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
+    const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', {
         weekday: 'long', day: 'numeric', month: 'long'
     });
 
@@ -68,10 +68,10 @@ export default function EntryEditor({ entry, date, onSave, onClose, onDelete }) 
 
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h3>{isNew ? 'New Entry' : 'Edit Entry'}</h3>
+                        <h3>{isNew ? t('addEntry') : (lang === 'ru' ? 'Редактировать' : 'Edit Entry')}</h3>
                         <div className="text-xs text-muted mt-1">{dateLabel}</div>
                     </div>
-                    <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
+                    <button className="icon-btn" onClick={onClose} aria-label={t('cancel')}>✕</button>
                 </div>
 
                 <textarea
@@ -79,13 +79,13 @@ export default function EntryEditor({ entry, date, onSave, onClose, onDelete }) 
                     className="textarea"
                     value={text}
                     onChange={handleTextChange}
-                    placeholder="What's on your mind today? Write freely…"
+                    placeholder={lang === 'ru' ? 'Что у вас на уме сегодня? Пишите свободно...' : "What's on your mind today? Write freely…"}
                     rows={5}
                     style={{ minHeight: '140px' }}
                 />
 
                 <div className="text-xs text-muted mt-1" style={{ textAlign: 'right' }}>
-                    {text.length} characters
+                    {text.length} {lang === 'ru' ? 'знаков' : 'characters'}
                 </div>
 
                 <div className="flex gap-2 mt-4">
@@ -95,18 +95,18 @@ export default function EntryEditor({ entry, date, onSave, onClose, onDelete }) 
                             onClick={handleDelete}
                             disabled={deleting}
                         >
-                            {deleting ? '…' : confirmDelete ? 'Confirm delete' : '🗑'}
+                            {deleting ? '…' : confirmDelete ? (lang === 'ru' ? 'Удалить?' : 'Confirm delete') : '🗑'}
                         </button>
                     )}
                     <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ marginLeft: !isNew ? 0 : 'auto' }}>
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button
                         className="btn btn-primary btn-sm"
                         onClick={handleSave}
                         disabled={!text.trim() || saving}
                     >
-                        {saving ? 'Saving…' : isNew ? 'Save entry' : 'Update'}
+                        {saving ? t('saving') : isNew ? t('save') : t('save')}
                     </button>
                 </div>
             </div>

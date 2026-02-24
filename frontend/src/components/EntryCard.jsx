@@ -1,5 +1,5 @@
-export default function EntryCard({ entry, onClick, isTherapist = false }) {
-    const time = new Date(entry.createdAt).toLocaleTimeString('en-GB', {
+export default function EntryCard({ entry, onClick, isTherapist = false, t, lang }) {
+    const time = new Date(entry.createdAt).toLocaleTimeString(lang === 'ru' ? 'ru' : 'en-GB', {
         hour: '2-digit', minute: '2-digit'
     });
 
@@ -16,10 +16,10 @@ export default function EntryCard({ entry, onClick, isTherapist = false }) {
 
             <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginTop: entry.isHighlighted || (isTherapist && entry.therapistComments) ? '0.5rem' : 0 }}>
                 {entry.isHighlighted && (
-                    <span className="entry-badge highlighted">⭐ Highlighted</span>
+                    <span className="entry-badge highlighted">⭐ {t('highlightedBadge')}</span>
                 )}
                 {isTherapist && entry.therapistComments && (
-                    <span className="entry-badge has-notes">📝 Has notes</span>
+                    <span className="entry-badge has-notes">📝 {t('hasNotes')}</span>
                 )}
             </div>
         </div>

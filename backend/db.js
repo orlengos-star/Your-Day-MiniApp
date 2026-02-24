@@ -12,11 +12,12 @@ db.pragma('foreign_keys = ON');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    telegramId  TEXT    NOT NULL UNIQUE,
-    name        TEXT    NOT NULL DEFAULT '',
-    role        TEXT    NOT NULL DEFAULT 'client' CHECK(role IN ('client','therapist')),
-    createdAt   TEXT    NOT NULL DEFAULT (datetime('now'))
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    telegramId        TEXT    NOT NULL UNIQUE,
+    name              TEXT    NOT NULL DEFAULT '',
+    role              TEXT    NOT NULL DEFAULT 'client' CHECK(role IN ('client','therapist')),
+    onboardingStatus  TEXT    NOT NULL DEFAULT 'completed',
+    createdAt         TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS journal_entries (
@@ -40,10 +41,21 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS relationships (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    clientId      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    therapistId   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    connectedAt   TEXT    NOT NULL DEFAULT (datetime('now')),
+    lastViewedAt  TEXT    DEFAULT NULL,
+    isArchived    INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(clientId, therapistId)
+  );
+
+  CREATE TABLE IF NOT EXISTS professional_notes (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     clientId     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     therapistId  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    connectedAt  TEXT    NOT NULL DEFAULT (datetime('now')),
+    content      TEXT    NOT NULL DEFAULT '',
+    updatedAt    TEXT    NOT NULL DEFAULT (datetime('now')),
     UNIQUE(clientId, therapistId)
   );
 
@@ -69,6 +81,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_ratings_userId_date ON day_ratings(userId, date);
   CREATE INDEX IF NOT EXISTS idx_relationships_client ON relationships(clientId);
   CREATE INDEX IF NOT EXISTS idx_relationships_therapist ON relationships(therapistId);
+  CREATE INDEX IF NOT EXISTS idx_prof_notes_lookup ON professional_notes(clientId, therapistId);
 `);
 
 // ── Helper: upsert user from Telegram data ────────────────────────────────────
@@ -83,7 +96,7 @@ function upsertUser(telegramId, name) {
     return existing;
   }
   const result = db.prepare(
-    'INSERT INTO users (telegramId, name) VALUES (?, ?)'
+    "INSERT INTO users (telegramId, name, onboardingStatus) VALUES (?, ?, 'pending_role')"
   ).run(String(telegramId), name || '');
   return db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
 }

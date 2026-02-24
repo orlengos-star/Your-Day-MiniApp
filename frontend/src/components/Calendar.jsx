@@ -1,9 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
-const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-
 const RATING_COLORS = {
     1: '#E57373', 2: '#FFB74D', 3: '#FFF176', 4: '#AED581', 5: '#66BB6A'
 };
@@ -15,10 +11,33 @@ export default function Calendar({
     selectedDate,
     ratings = [],
     entries = [],
-    forceCollapse = false
+    forceCollapse = false,
+    lang = 'en'
 }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [year, month] = currentMonth.split('-').map(Number);
+
+    const locale = lang === 'ru' ? 'ru' : 'en-GB';
+
+    // Build localized month names and days
+    const monthName = useMemo(() => {
+        const d = new Date(year, month - 1, 1);
+        return new Intl.DateTimeFormat(locale, { month: 'long' }).format(d);
+    }, [year, month, locale]);
+
+    const dayLabels = useMemo(() => {
+        const labels = [];
+        const baseDate = new Date(2021, 0, 4); // Monday
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(baseDate);
+            d.setDate(baseDate.getDate() + i);
+            let label = new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d);
+            // Capitalize first letter (especially for RU)
+            label = label.charAt(0).toUpperCase() + label.slice(1);
+            labels.push(label);
+        }
+        return labels;
+    }, [locale]);
 
     // Auto-collapse when requested
     useEffect(() => {
@@ -93,7 +112,7 @@ export default function Calendar({
             <div className="calendar-header">
                 <button className="icon-btn" onClick={prev} aria-label="Previous">‹</button>
                 <span className="calendar-month" onClick={() => setIsExpanded(!isExpanded)}>
-                    {MONTHS[month - 1]} {year}
+                    {monthName} {year}
                     <span className="expand-icon">{isExpanded ? ' ▴' : ' ▾'}</span>
                 </span>
                 <button className="icon-btn" onClick={next} aria-label="Next">›</button>
@@ -101,7 +120,7 @@ export default function Calendar({
 
             <div className="calendar-grid-container">
                 <div className="calendar-grid">
-                    {DAYS.map(d => (
+                    {dayLabels.map(d => (
                         <div key={d} className="calendar-day-label">{d}</div>
                     ))}
 
@@ -120,7 +139,7 @@ export default function Calendar({
                                 className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
                                 onClick={() => onDaySelect(dateStr)}
                                 role="button"
-                                aria-label={`${day} ${MONTHS[month - 1]}`}
+                                aria-label={`${day} ${monthName}`}
                                 aria-pressed={isSelected}
                             >
                                 <span>{day}</span>

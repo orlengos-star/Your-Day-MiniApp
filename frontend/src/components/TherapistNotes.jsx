@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api.js';
 
-export default function TherapistNotes({ entry, onUpdate }) {
+export default function TherapistNotes({ entry, onUpdate, t }) {
     const [notes, setNotes] = useState(entry.therapistComments || '');
     const [highlighted, setHighlighted] = useState(!!entry.isHighlighted);
     const [saving, setSaving] = useState(false);
@@ -38,14 +38,14 @@ export default function TherapistNotes({ entry, onUpdate }) {
     return (
         <div className="therapist-notes-section">
             <div className="therapist-notes-label">
-                🔒 Private Therapist Notes
+                🔒 {t('therapistComments')}
             </div>
 
             <textarea
                 className="textarea"
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                placeholder="Add private observations, clinical notes…"
+                placeholder={t('addComment')}
                 rows={3}
                 style={{ minHeight: '80px', fontSize: '0.875rem', background: 'transparent', border: '1px solid #FFE0B2' }}
             />
@@ -56,7 +56,7 @@ export default function TherapistNotes({ entry, onUpdate }) {
                     onClick={toggleHighlight}
                     style={{ fontSize: '0.75rem' }}
                 >
-                    {highlighted ? '⭐ Highlighted' : '☆ Highlight'}
+                    {highlighted ? `⭐ ${t('highlightEntry')}` : `☆ ${t('highlightEntry')}`}
                 </button>
 
                 <button
@@ -65,7 +65,7 @@ export default function TherapistNotes({ entry, onUpdate }) {
                     disabled={saving}
                     style={{ fontSize: '0.75rem' }}
                 >
-                    {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save notes'}
+                    {saving ? t('saving') : saved ? `✓ ${t('save')}` : t('save')}
                 </button>
             </div>
         </div>

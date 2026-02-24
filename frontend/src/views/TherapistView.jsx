@@ -7,7 +7,7 @@ import TherapistNotes from '../components/TherapistNotes.jsx';
 import NotificationSettings from '../components/NotificationSettings.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 
-export default function TherapistView({ startParam, theme, onThemeChange, telegramColorScheme }) {
+export default function TherapistView({ startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
     const today = new Date().toISOString().split('T')[0];
     const currentMonthDefault = today.slice(0, 7);
 
@@ -107,8 +107,9 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
             const { link } = await api.relationships.createInvite('invite_client');
             setInviteLink(link);
             if (window.Telegram?.WebApp?.openTelegramLink) {
+                const shareMsg = lang === 'ru' ? 'Приглашаю вас вести дневник в приложении "Мой Дневник" 🌿' : 'Join my Emotional Journal as my client 🌿';
                 window.Telegram.WebApp.openTelegramLink(
-                    `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join my Emotional Journal as my client 🌿')}`
+                    `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareMsg)}`
                 );
             }
         } catch (err) {
@@ -118,7 +119,7 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
         }
     }
 
-    const dateLabel = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-GB', {
+    const dateLabel = new Date(selectedDate + 'T12:00:00').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', {
         weekday: 'long', day: 'numeric', month: 'long'
     });
 
@@ -127,12 +128,12 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
             {/* Header */}
             <header className="app-header">
                 <div>
-                    <h1>🌿 Journal</h1>
-                    <div className="header-subtitle">Therapist view</div>
+                    <h1>🌿 {t('appTitle')}</h1>
+                    <div className="header-subtitle">{t('therapistView')}</div>
                 </div>
                 <div className="flex items-center gap-2">
                     <ThemeToggle theme={theme} onChange={onThemeChange} telegramColorScheme={telegramColorScheme} />
-                    <button className="icon-btn" onClick={() => setShowSettings(true)} aria-label="Settings">⚙️</button>
+                    <button className="icon-btn" onClick={() => setShowSettings(true)} aria-label={t('settings')}>⚙️</button>
                 </div>
             </header>
 
@@ -142,13 +143,13 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                     className={`tab-btn ${activeTab === 'journal' ? 'active' : ''}`}
                     onClick={() => setActiveTab('journal')}
                 >
-                    My Journal
+                    {lang === 'ru' ? 'Мой личный дневник' : 'My Journal'}
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'clients' ? 'active' : ''}`}
                     onClick={() => setActiveTab('clients')}
                 >
-                    My Clients {clients.length > 0 && `(${clients.length})`}
+                    {lang === 'ru' ? 'Мои клиенты' : 'My Clients'} {clients.length > 0 && `(${clients.length})`}
                 </button>
             </div>
 
@@ -158,8 +159,9 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-3)' }}>
                         <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📖</div>
                         <p style={{ fontSize: '0.875rem' }}>
-                            Your personal journal works the same as your clients'.<br />
-                            Send messages to the bot to create entries.
+                            {lang === 'ru'
+                                ? 'Ваш личный дневник работает так же, как и у ваших клиентов. Чтобы создать запись, просто отправьте сообщение боту.'
+                                : "Your personal journal works the same as your clients'. Send messages to the bot to create entries."}
                         </p>
                     </div>
                 </div>
@@ -172,14 +174,14 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                     {clients.length === 0 ? (
                         <div className="empty-state mt-6">
                             <div className="empty-state-icon">👥</div>
-                            <h3>No clients yet</h3>
-                            <p>Invite a client to connect their journal with you.</p>
+                            <h3>{t('noClients')}</h3>
+                            <p>{t('noClientsSub')}</p>
                             <button
                                 className="btn btn-primary mt-4"
                                 onClick={handleInviteClient}
                                 disabled={inviteLoading}
                             >
-                                {inviteLoading ? 'Generating…' : '🔗 Invite a client'}
+                                {inviteLoading ? t('generating') : `🔗 ${t('inviteClient')}`}
                             </button>
                             {inviteLink && (
                                 <div style={{ marginTop: '1rem' }}>
@@ -199,7 +201,7 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                         className="btn btn-ghost btn-sm"
                                         onClick={() => navigator.clipboard?.writeText(inviteLink)}
                                     >
-                                        📋 Copy link
+                                        📋 {t('copyLink')}
                                     </button>
                                 </div>
                             )}
@@ -223,7 +225,7 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                     disabled={inviteLoading}
                                     style={{ borderStyle: 'dashed' }}
                                 >
-                                    + Invite
+                                    + {lang === 'ru' ? 'Пригласить' : 'Invite'}
                                 </button>
                             </div>
 
@@ -239,6 +241,7 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                             ratings={ratings}
                                             entries={entries}
                                             forceCollapse={!!selectedEntry}
+                                            lang={lang}
                                         />
                                     </div>
 
@@ -247,22 +250,23 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                     <div className="section">
                                         <div className="section-header">
                                             <span className="section-title">
-                                                {selectedDate === today ? "Today's entries" : dateLabel}
+                                                {selectedDate === today ? t('todaysEntries') : dateLabel}
                                             </span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs text-muted">{dayEntries.length} {dayEntries.length === 1 ? 'entry' : 'entries'}</span>
+                                                <span className="text-xs text-muted">{t('entriesCount', dayEntries.length)}</span>
                                             </div>
                                         </div>
 
                                         <div className="flex flex-col items-center gap-3 mb-4">
                                             {dayRating?.clientRating && (
-                                                <span className="text-xs text-muted" title="Client's rating">
-                                                    Client rated their day: {'😔😕😐🙂😊'[dayRating.clientRating - 1]}
+                                                <span className="text-xs text-muted">
+                                                    {t('clientRated', '😔😕😐🙂😊'[dayRating.clientRating - 1])}
                                                 </span>
                                             )}
                                             <DayRating
                                                 value={dayRating?.therapistRating || null}
                                                 onChange={handleTherapistRating}
+                                                t={t}
                                             />
                                         </div>
 
@@ -275,8 +279,10 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                         ) : dayEntries.length === 0 ? (
                                             <div className="empty-state">
                                                 <div className="empty-state-icon">📝</div>
-                                                <h3>No entries for this day</h3>
-                                                <p>{selectedClient.name} hasn't written anything yet for this date.</p>
+                                                <h3>{lang === 'ru' ? 'Нет записей' : 'No entries for this day'}</h3>
+                                                <p>{lang === 'ru'
+                                                    ? `${selectedClient.name} пока ничего не записал(а) за эту дату.`
+                                                    : `${selectedClient.name} hasn't written anything yet for this date.`}</p>
                                             </div>
                                         ) : (
                                             dayEntries.map(entry => (
@@ -285,6 +291,8 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                                                         entry={entry}
                                                         onClick={setSelectedEntry}
                                                         isTherapist
+                                                        t={t}
+                                                        lang={lang}
                                                     />
                                                 </div>
                                             ))
@@ -304,9 +312,9 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                         <div className="drawer-handle" />
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h3>Journal Entry</h3>
+                                <h3>{lang === 'ru' ? 'Запись в дневнике' : 'Journal Entry'}</h3>
                                 <div className="text-xs text-muted mt-1">
-                                    {new Date(selectedEntry.createdAt).toLocaleString('en-GB', {
+                                    {new Date(selectedEntry.createdAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB', {
                                         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                                     })}
                                 </div>
@@ -326,14 +334,23 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
                             {selectedEntry.text}
                         </div>
 
-                        <TherapistNotes entry={selectedEntry} onUpdate={handleEntryUpdate} />
+                        <TherapistNotes
+                            entry={selectedEntry}
+                            onUpdate={handleEntryUpdate}
+                            t={t}
+                        />
                     </div>
                 </div>
             )}
 
             {/* Settings drawer */}
             {showSettings && (
-                <NotificationSettings onClose={() => setShowSettings(false)} />
+                <NotificationSettings
+                    onClose={() => setShowSettings(false)}
+                    lang={lang}
+                    onLangChange={onLangChange}
+                    t={t}
+                />
             )}
         </>
     );

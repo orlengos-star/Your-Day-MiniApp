@@ -7,7 +7,10 @@ export default function NotificationSettings({
     onInviteTherapist,
     inviteLink,
     inviteLoading,
-    onDisconnect
+    onDisconnect,
+    lang,
+    onLangChange,
+    t
 }) {
     const [settings, setSettings] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -36,7 +39,7 @@ export default function NotificationSettings({
             <div className="overlay" onClick={e => e.target === e.currentTarget && onClose()}>
                 <div className="drawer">
                     <div className="drawer-handle" />
-                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-3)' }}>Loading…</div>
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-3)' }}>{t('loading')}</div>
                 </div>
             </div>
         );
@@ -48,17 +51,35 @@ export default function NotificationSettings({
                 <div className="drawer-handle" />
 
                 <div className="flex items-center justify-between mb-4">
-                    <h3>Settings</h3>
+                    <h3>{t('settings')}</h3>
                     <button className="icon-btn" onClick={onClose}>✕</button>
                 </div>
 
-                <div className="section-title mb-2">Notifications</div>
+                <div className="section-title mb-2">{t('language')}</div>
+                <div className="flex gap-2 mb-4">
+                    <button
+                        className={`btn btn-sm ${lang === 'en' ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => onLangChange('en')}
+                        style={{ flex: 1 }}
+                    >
+                        🇬🇧 English
+                    </button>
+                    <button
+                        className={`btn btn-sm ${lang === 'ru' ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => onLangChange('ru')}
+                        style={{ flex: 1 }}
+                    >
+                        🇷🇺 Русский
+                    </button>
+                </div>
+
+                <div className="section-title mb-2">{t('notifications')}</div>
                 <div className="card mb-4">
                     {/* Enable/disable */}
                     <div className="settings-row">
                         <div>
-                            <div className="settings-label">Daily Reminders</div>
-                            <div className="settings-sublabel">Get reminded to journal each day</div>
+                            <div className="settings-label">{t('dailyReminders')}</div>
+                            <div className="settings-sublabel">{t('dailyRemindersSub')}</div>
                         </div>
                         <label className="toggle">
                             <input
@@ -74,8 +95,8 @@ export default function NotificationSettings({
                     {settings.enabled ? (
                         <div className="settings-row">
                             <div>
-                                <div className="settings-label">Reminder Time</div>
-                                <div className="settings-sublabel">When to send your daily nudge</div>
+                                <div className="settings-label">{t('reminderTime')}</div>
+                                <div className="settings-sublabel">{t('reminderTimeSub')}</div>
                             </div>
                             <input
                                 type="time"
@@ -89,20 +110,20 @@ export default function NotificationSettings({
                 </div>
 
                 {/* Therapist Connection */}
-                <div className="section-title mb-2">Therapist</div>
+                <div className="section-title mb-2">{t('therapist')}</div>
                 <div className="card mb-4">
                     {therapist ? (
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="settings-label">Connected: {therapist.name}</div>
-                                <div className="settings-sublabel">Connected on {new Date(therapist.connectedAt).toLocaleDateString()}</div>
+                                <div className="settings-label">{t('connectedWith', therapist.name)}</div>
+                                <div className="settings-sublabel">{t('connectedOn', new Date(therapist.connectedAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB'))}</div>
                             </div>
-                            <button className="btn btn-ghost btn-sm" onClick={onDisconnect}>Disconnect</button>
+                            <button className="btn btn-ghost btn-sm" onClick={onDisconnect}>{t('disconnect')}</button>
                         </div>
                     ) : (
                         <div>
-                            <div className="settings-label">Not connected</div>
-                            <div className="settings-sublabel mb-3">Invite your therapist to view your journal</div>
+                            <div className="settings-label">{t('notConnected')}</div>
+                            <div className="settings-sublabel mb-3">{t('inviteSub')}</div>
 
                             {inviteLink ? (
                                 <div style={{
@@ -119,7 +140,7 @@ export default function NotificationSettings({
                                         className="btn btn-primary btn-sm w-full mt-2"
                                         onClick={() => navigator.clipboard?.writeText(inviteLink)}
                                     >
-                                        📋 Copy Invite Link
+                                        📋 {t('copyInvite')}
                                     </button>
                                 </div>
                             ) : (
@@ -128,7 +149,7 @@ export default function NotificationSettings({
                                     onClick={onInviteTherapist}
                                     disabled={inviteLoading}
                                 >
-                                    {inviteLoading ? 'Generating…' : '🔗 Generate Invite Link'}
+                                    {inviteLoading ? t('generating') : `🔗 ${t('generateInvite')}`}
                                 </button>
                             )}
                         </div>
@@ -138,12 +159,12 @@ export default function NotificationSettings({
                 {/* Therapist-specific settings (if user is therapist) */}
                 {settings.therapistMode !== undefined && (
                     <div className="card mt-3">
-                        <div className="section-title mb-2">Professional Mode</div>
+                        <div className="section-title mb-2">{t('professionalMode')}</div>
 
                         <div className="settings-row">
                             <div>
-                                <div className="settings-label">Notification Mode</div>
-                                <div className="settings-sublabel">How to receive client updates</div>
+                                <div className="settings-label">{t('notificationMode')}</div>
+                                <div className="settings-sublabel">{t('notificationModeSub')}</div>
                             </div>
                         </div>
 
@@ -153,20 +174,20 @@ export default function NotificationSettings({
                                 onClick={() => update({ therapistMode: 'per_client' })}
                                 style={{ flex: 1 }}
                             >
-                                Instant
+                                {t('instant')}
                             </button>
                             <button
                                 className={`btn btn-sm ${settings.therapistMode === 'batch_digest' ? 'btn-primary' : 'btn-ghost'}`}
                                 onClick={() => update({ therapistMode: 'batch_digest' })}
                                 style={{ flex: 1 }}
                             >
-                                Daily digest
+                                {t('dailyDigest')}
                             </button>
                         </div>
 
                         {settings.therapistMode === 'batch_digest' && (
                             <div className="settings-row mt-3">
-                                <div className="settings-label">Digest Time</div>
+                                <div className="settings-label">{t('digestTime')}</div>
                                 <input
                                     type="time"
                                     className="input"
@@ -180,7 +201,7 @@ export default function NotificationSettings({
                 )}
 
                 {saving && (
-                    <div className="text-xs text-muted mt-3" style={{ textAlign: 'center' }}>Saving…</div>
+                    <div className="text-xs text-muted mt-3" style={{ textAlign: 'center' }}>{t('saving')}</div>
                 )}
             </div>
         </div>
