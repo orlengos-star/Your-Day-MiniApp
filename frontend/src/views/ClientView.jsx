@@ -7,7 +7,7 @@ import DayRating from '../components/DayRating.jsx';
 import NotificationSettings from '../components/NotificationSettings.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 
-export default function ClientView({ startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
+export default function ClientView({ user, onUserChange, startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
     const today = new Date().toISOString().split('T')[0];
     const currentMonthDefault = today.slice(0, 7);
 
