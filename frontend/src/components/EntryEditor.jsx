@@ -98,9 +98,6 @@ export default function EntryEditor({ entry, date, onSave, onClose, onDelete, t,
                             {deleting ? '…' : confirmDelete ? (lang === 'ru' ? 'Удалить?' : 'Confirm delete') : '🗑'}
                         </button>
                     )}
-                    <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ marginLeft: !isNew ? 0 : 'auto' }}>
-                        {t('cancel')}
-                    </button>
                     <button
                         className="btn btn-primary btn-sm"
                         onClick={handleSave}

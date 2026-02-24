@@ -15,10 +15,10 @@ export default function EntryCard({ entry, onClick, isTherapist = false, t, lang
             <div className="entry-text">{entry.text}</div>
 
             <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginTop: entry.isHighlighted || (isTherapist && entry.therapistComments) ? '0.5rem' : 0 }}>
-                {entry.isHighlighted && (
+                {!!entry.isHighlighted && (
                     <span className="entry-badge highlighted">⭐ {t('highlightedBadge')}</span>
                 )}
-                {isTherapist && entry.therapistComments && (
+                {isTherapist && !!entry.therapistComments && (
                     <span className="entry-badge has-notes">📝 {t('hasNotes')}</span>
                 )}
             </div>
