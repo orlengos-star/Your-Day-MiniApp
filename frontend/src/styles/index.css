@@ -1123,3 +1123,67 @@ p {
 .w-full {
   width: 100%;
 }
+/*  Dashboard & Client Management  */
+.client-list-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.client-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.client-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.client-card:active {
+  transform: scale(0.99);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.375rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.badge-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.badge-ghost {
+  background: var(--surface-2);
+  color: var(--text-3);
+  border: 1px solid var(--border);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--text-3);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.brand-surface {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}

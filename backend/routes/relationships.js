@@ -51,14 +51,68 @@ router.get('/clients', (req, res) => {
     }
 
     const clients = db.prepare(`
-    SELECT u.id, u.name, u.telegramId, r.connectedAt, r.id as relationshipId
+    SELECT 
+        u.id, 
+        u.name, 
+        u.telegramId, 
+        r.connectedAt, 
+        r.id as relationshipId,
+        r.isArchived,
+        r.lastViewedAt,
+        pn.content as professionalNote,
+        count(je.id) as unreadCount
     FROM relationships r
     JOIN users u ON u.id = r.clientId
+    LEFT JOIN professional_notes pn ON pn.clientId = u.id AND pn.therapistId = r.therapistId
+    LEFT JOIN journal_entries je ON je.userId = u.id AND (r.lastViewedAt IS NULL OR je.createdAt > r.lastViewedAt)
     WHERE r.therapistId = ?
-    ORDER BY u.name
+    GROUP BY u.id
+    ORDER BY r.isArchived ASC, u.name ASC
   `).all(user.id);
 
     res.json(clients);
+});
+
+// PATCH /api/relationships/:id/archive — toggle archive status
+router.patch('/:id/archive', (req, res) => {
+    const user = getDbUser(req);
+    const { isArchived } = req.body;
+
+    const rel = db.prepare('SELECT * FROM relationships WHERE id = ?').get(req.params.id);
+    if (!rel || rel.therapistId !== user.id) return res.status(403).json({ error: 'Access denied' });
+
+    db.prepare('UPDATE relationships SET isArchived = ? WHERE id = ?').run(isArchived ? 1 : 0, rel.id);
+    res.json({ success: true, isArchived: !!isArchived });
+});
+
+// POST /api/relationships/viewed — mark client as viewed to clear unread badge
+router.post('/viewed', (req, res) => {
+    const user = getDbUser(req);
+    const { clientId } = req.body;
+
+    db.prepare(`
+    UPDATE relationships 
+    SET lastViewedAt = datetime('now') 
+    WHERE therapistId = ? AND clientId = ?
+  `).run(user.id, clientId);
+
+    res.json({ success: true, lastViewedAt: new Date().toISOString() });
+});
+
+// PUT /api/relationships/notes — update professional notes for a client
+router.put('/notes', (req, res) => {
+    const user = getDbUser(req);
+    const { clientId, content } = req.body;
+
+    db.prepare(`
+    INSERT INTO professional_notes (clientId, therapistId, content, updatedAt)
+    VALUES (?, ?, ?, datetime('now'))
+    ON CONFLICT(clientId, therapistId) DO UPDATE SET
+      content = excluded.content,
+      updatedAt = excluded.updatedAt
+  `).run(clientId, user.id, content || '');
+
+    res.json({ success: true });
 });
 
 // GET /api/relationships/therapist — get the client's connected therapist

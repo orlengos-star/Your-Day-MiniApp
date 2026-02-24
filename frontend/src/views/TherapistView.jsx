@@ -6,14 +6,17 @@ import DayRating from '../components/DayRating.jsx';
 import TherapistNotes from '../components/TherapistNotes.jsx';
 import NotificationSettings from '../components/NotificationSettings.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import ClientList from '../components/ClientList.jsx';
 
 export default function TherapistView({ user, onUserChange, startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
     const today = new Date().toISOString().split('T')[0];
     const currentMonthDefault = today.slice(0, 7);
 
-    const [activeTab, setActiveTab] = useState('journal'); // 'journal' | 'clients'
+    // State
     const [clients, setClients] = useState([]);
     const [selectedClientId, setSelectedClientId] = useState(null);
+    const [activeDetailTab, setActiveDetailTab] = useState('card'); // 'card' | 'diary'
+
     const [currentMonth, setCurrentMonth] = useState(currentMonthDefault);
     const [selectedDate, setSelectedDate] = useState(today);
     const [entries, setEntries] = useState([]);
@@ -25,14 +28,15 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
     const [inviteLoading, setInviteLoading] = useState(false);
 
     // Load clients
-    useEffect(() => {
+    const loadClients = useCallback(() => {
         api.relationships.getClients()
-            .then(list => {
-                setClients(list);
-                if (list.length > 0 && !selectedClientId) setSelectedClientId(list[0].id);
-            })
+            .then(setClients)
             .catch(console.error);
     }, []);
+
+    useEffect(() => {
+        loadClients();
+    }, [loadClients]);
 
     // Load client data when client or month changes
     const loadClientData = useCallback(async (clientId, month) => {
@@ -53,10 +57,10 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
     }, []);
 
     useEffect(() => {
-        if (activeTab === 'clients' && selectedClientId) {
+        if (selectedClientId) {
             loadClientData(selectedClientId, currentMonth);
         }
-    }, [activeTab, selectedClientId, currentMonth, loadClientData]);
+    }, [selectedClientId, currentMonth, loadClientData]);
 
     // Handle deep-link
     useEffect(() => {
@@ -65,39 +69,36 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
         if (match) {
             api.entries.get(match[1]).then(entry => {
                 if (entry) {
-                    setActiveTab('clients');
                     setSelectedClientId(entry.userId);
+                    setActiveDetailTab('diary');
                     setCurrentMonth(entry.entryDate.slice(0, 7));
                     setSelectedDate(entry.entryDate);
                     setSelectedEntry(entry);
+                    api.relationships.markViewed(entry.userId).then(loadClients);
                 }
             }).catch(console.error);
         }
-    }, [startParam]);
+    }, [startParam, loadClients]);
 
+    const selectedClient = clients.find(c => c.id === selectedClientId);
     const dayEntries = entries.filter(e => e.entryDate === selectedDate);
     const dayRating = ratings.find(r => r.date === selectedDate);
-    const selectedClient = clients.find(c => c.id === selectedClientId);
 
-    function handleEntryUpdate(updated) {
-        setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
-        if (selectedEntry?.id === updated.id) setSelectedEntry(updated);
+    function handleSelectClient(client) {
+        setSelectedClientId(client.id);
+        setActiveDetailTab('card');
+        // Clear unread badge
+        if (client.unreadCount > 0) {
+            api.relationships.markViewed(client.id).then(loadClients);
+        }
     }
 
-    async function handleTherapistRating(value) {
+    async function handleToggleArchive(relId, isArchived) {
         try {
-            const updated = await api.ratings.upsert({
-                date: selectedDate,
-                therapistRating: value,
-                clientId: selectedClientId,
-            });
-            setRatings(prev => {
-                const idx = prev.findIndex(r => r.date === selectedDate);
-                if (idx >= 0) { const next = [...prev]; next[idx] = updated; return next; }
-                return [...prev, updated];
-            });
+            await api.relationships.toggleArchive(relId, isArchived);
+            loadClients();
         } catch (err) {
-            console.error('Rating failed:', err);
+            alert('Failed to update: ' + err.message);
         }
     }
 
@@ -119,6 +120,37 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
         }
     }
 
+    async function handleNotesUpdate(content) {
+        try {
+            await api.relationships.updateNotes(selectedClientId, content);
+            setClients(prev => prev.map(c => c.id === selectedClientId ? { ...c, professionalNote: content } : c));
+        } catch (err) {
+            alert('Failed to save notes: ' + err.message);
+        }
+    }
+
+    async function handleTherapistRating(value) {
+        try {
+            const updated = await api.ratings.upsert({
+                date: selectedDate,
+                therapistRating: value,
+                clientId: selectedClientId,
+            });
+            setRatings(prev => {
+                const idx = prev.findIndex(r => r.date === selectedDate);
+                if (idx >= 0) { const next = [...prev]; next[idx] = updated; return next; }
+                return [...prev, updated];
+            });
+        } catch (err) {
+            console.error('Rating failed:', err);
+        }
+    }
+
+    function handleEntryUpdate(updated) {
+        setEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
+        if (selectedEntry?.id === updated.id) setSelectedEntry(updated);
+    }
+
     const dateLabel = new Date(selectedDate + 'T12:00:00').toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', {
         weekday: 'long', day: 'numeric', month: 'long'
     });
@@ -127,9 +159,14 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
         <>
             {/* Header */}
             <header className="app-header">
-                <div>
-                    <h1>🌿 {t('appTitle')}</h1>
-                    <div className="header-subtitle">{t('therapistView')}</div>
+                <div className="flex items-center gap-3">
+                    {selectedClientId && (
+                        <button className="icon-btn" onClick={() => setSelectedClientId(null)}>←</button>
+                    )}
+                    <div>
+                        <h1>{selectedClientId ? (selectedClient?.name || 'Client') : `🌿 ${t('appTitle')}`}</h1>
+                        <div className="header-subtitle">{selectedClientId ? t('clientProfile') : t('therapistDashboard')}</div>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <ThemeToggle theme={theme} onChange={onThemeChange} telegramColorScheme={telegramColorScheme} />
@@ -137,175 +174,142 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
                 </div>
             </header>
 
-            {/* Tab bar */}
-            <div className="tab-bar">
-                <button
-                    className={`tab-btn ${activeTab === 'journal' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('journal')}
-                >
-                    {lang === 'ru' ? 'Мой личный дневник' : 'My Journal'}
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'clients' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('clients')}
-                >
-                    {lang === 'ru' ? 'Мои клиенты' : 'My Clients'} {clients.length > 0 && `(${clients.length})`}
-                </button>
-            </div>
-
-            {/* ── My Journal tab ── */}
-            {activeTab === 'journal' && (
-                <div className="page">
-                    <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-3)' }}>
-                        <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📖</div>
-                        <p style={{ fontSize: '0.875rem' }}>
-                            {lang === 'ru'
-                                ? 'Ваш личный дневник работает так же, как и у ваших клиентов. Чтобы создать запись, просто отправьте сообщение боту.'
-                                : "Your personal journal works the same as your clients'. Send messages to the bot to create entries."}
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* ── My Clients tab ── */}
-            {activeTab === 'clients' && (
-                <div className="page">
-                    {/* Client selector */}
-                    {clients.length === 0 ? (
-                        <div className="empty-state mt-6">
-                            <div className="empty-state-icon">👥</div>
-                            <h3>{t('noClients')}</h3>
-                            <p>{t('noClientsSub')}</p>
+            <div className="page">
+                {!selectedClientId ? (
+                    <ClientList
+                        clients={clients}
+                        onSelectClient={handleSelectClient}
+                        onToggleArchive={handleToggleArchive}
+                        onInviteClient={handleInviteClient}
+                        inviteLoading={inviteLoading}
+                        inviteLink={inviteLink}
+                        t={t}
+                        lang={lang}
+                    />
+                ) : (
+                    <>
+                        {/* Client Dashboard Tabs */}
+                        <div className="tab-bar mb-4" style={{ position: 'sticky', top: '0', background: 'var(--bg)' }}>
                             <button
-                                className="btn btn-primary mt-4"
-                                onClick={handleInviteClient}
-                                disabled={inviteLoading}
+                                className={`tab-btn ${activeDetailTab === 'card' ? 'active' : ''}`}
+                                onClick={() => setActiveDetailTab('card')}
                             >
-                                {inviteLoading ? t('generating') : `🔗 ${t('inviteClient')}`}
+                                📋 {t('clientCard')}
                             </button>
-                            {inviteLink && (
-                                <div style={{ marginTop: '1rem' }}>
-                                    <div style={{
-                                        background: 'var(--surface)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        padding: '0.5rem 0.75rem',
-                                        fontSize: '0.75rem',
-                                        wordBreak: 'break-all',
-                                        color: 'var(--text-2)',
-                                        marginBottom: '0.5rem'
-                                    }}>
-                                        {inviteLink}
-                                    </div>
-                                    <button
-                                        className="btn btn-ghost btn-sm"
-                                        onClick={() => navigator.clipboard?.writeText(inviteLink)}
-                                    >
-                                        📋 {t('copyLink')}
-                                    </button>
-                                </div>
-                            )}
+                            <button
+                                className={`tab-btn ${activeDetailTab === 'diary' ? 'active' : ''}`}
+                                onClick={() => setActiveDetailTab('diary')}
+                            >
+                                📖 {t('clientDiary')}
+                            </button>
                         </div>
-                    ) : (
-                        <>
-                            {/* Client chips */}
-                            <div className="client-selector">
-                                {clients.map(c => (
-                                    <button
-                                        key={c.id}
-                                        className={`client-chip ${selectedClientId === c.id ? 'active' : ''}`}
-                                        onClick={() => { setSelectedClientId(c.id); setSelectedEntry(null); }}
-                                    >
-                                        {c.name || `Client #${c.id}`}
-                                    </button>
-                                ))}
-                                <button
-                                    className="client-chip"
-                                    onClick={handleInviteClient}
-                                    disabled={inviteLoading}
-                                    style={{ borderStyle: 'dashed' }}
-                                >
-                                    + {lang === 'ru' ? 'Пригласить' : 'Invite'}
-                                </button>
-                            </div>
 
-                            {selectedClient && (
-                                <>
-                                    {/* Calendar */}
-                                    <div className="mt-3">
-                                        <Calendar
-                                            currentMonth={currentMonth}
-                                            onMonthChange={m => { setCurrentMonth(m); setSelectedDate(m + '-01'); }}
-                                            onDaySelect={setSelectedDate}
-                                            selectedDate={selectedDate}
-                                            ratings={ratings}
-                                            entries={entries}
-                                            forceCollapse={!!selectedEntry}
-                                            lang={lang}
+                        {activeDetailTab === 'card' && (
+                            <div className="flex flex-col gap-4">
+                                <section className="card">
+                                    <h3 className="mb-3">{t('professionalObservations')}</h3>
+                                    <textarea
+                                        className="textarea w-full"
+                                        placeholder={t('notesPlaceholder')}
+                                        value={selectedClient?.professionalNote || ''}
+                                        onChange={(e) => handleNotesUpdate(e.target.value)}
+                                        style={{ minHeight: '150px' }}
+                                    />
+                                    <div className="text-right mt-2 text-xs text-muted italic">
+                                        {t('autoSaving')}
+                                    </div>
+                                </section>
+
+                                <div className="card">
+                                    <div className="settings-row">
+                                        <div>
+                                            <div className="settings-label">{t('connectedDate')}</div>
+                                            <div className="settings-sublabel">
+                                                {selectedClient?.connectedAt ? new Date(selectedClient.connectedAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB') : '-'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="settings-row mt-3">
+                                        <div>
+                                            <div className="settings-label">{t('archiveClient')}</div>
+                                            <div className="settings-sublabel">{t('archiveClientSub')}</div>
+                                        </div>
+                                        <button
+                                            className="btn btn-ghost btn-sm"
+                                            onClick={() => handleToggleArchive(selectedClient.relationshipId, !selectedClient.isArchived)}
+                                        >
+                                            {selectedClient?.isArchived ? t('unarchive') : t('archive')}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeDetailTab === 'diary' && (
+                            <>
+                                <Calendar
+                                    currentMonth={currentMonth}
+                                    onMonthChange={m => { setCurrentMonth(m); setSelectedDate(m + '-01'); }}
+                                    onDaySelect={setSelectedDate}
+                                    selectedDate={selectedDate}
+                                    ratings={ratings}
+                                    entries={entries}
+                                    forceCollapse={!!selectedEntry}
+                                    lang={lang}
+                                />
+
+                                <div className="section mt-4">
+                                    <div className="section-header">
+                                        <span className="section-title">
+                                            {selectedDate === today ? t('todaysEntries') : dateLabel}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="badge badge-ghost text-muted">{dayEntries.length}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col items-center gap-3 mb-6">
+                                        {dayRating?.clientRating && (
+                                            <span className="text-xs text-muted">
+                                                {t('clientRated', '😔😕😐🙂😊'[dayRating.clientRating - 1])}
+                                            </span>
+                                        )}
+                                        <DayRating
+                                            value={dayRating?.therapistRating || null}
+                                            onChange={handleTherapistRating}
+                                            t={t}
                                         />
                                     </div>
 
-
-                                    {/* Entries */}
-                                    <div className="section">
-                                        <div className="section-header">
-                                            <span className="section-title">
-                                                {selectedDate === today ? t('todaysEntries') : dateLabel}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs text-muted">{t('entriesCount', dayEntries.length)}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col items-center gap-3 mb-4">
-                                            {dayRating?.clientRating && (
-                                                <span className="text-xs text-muted">
-                                                    {t('clientRated', '😔😕😐🙂😊'[dayRating.clientRating - 1])}
-                                                </span>
-                                            )}
-                                            <DayRating
-                                                value={dayRating?.therapistRating || null}
-                                                onChange={handleTherapistRating}
-                                                t={t}
-                                            />
-                                        </div>
-
+                                    <div className="flex flex-col gap-3">
                                         {loading ? (
-                                            <div className="card">
-                                                <div className="skeleton skeleton-text" style={{ width: '40%' }} />
-                                                <div className="skeleton skeleton-text" />
-                                                <div className="skeleton skeleton-text" />
-                                            </div>
+                                            <div className="card text-center text-muted py-8">{t('loading')}</div>
                                         ) : dayEntries.length === 0 ? (
-                                            <div className="empty-state">
+                                            <div className="empty-state py-8">
                                                 <div className="empty-state-icon">📝</div>
-                                                <h3>{lang === 'ru' ? 'Нет записей' : 'No entries for this day'}</h3>
-                                                <p>{lang === 'ru'
-                                                    ? `${selectedClient.name} пока ничего не записал(а) за эту дату.`
-                                                    : `${selectedClient.name} hasn't written anything yet for this date.`}</p>
+                                                <p>{t('noEntriesDate')}</p>
                                             </div>
                                         ) : (
                                             dayEntries.map(entry => (
-                                                <div key={entry.id}>
-                                                    <EntryCard
-                                                        entry={entry}
-                                                        onClick={setSelectedEntry}
-                                                        isTherapist
-                                                        t={t}
-                                                        lang={lang}
-                                                    />
-                                                </div>
+                                                <EntryCard
+                                                    key={entry.id}
+                                                    entry={entry}
+                                                    onClick={setSelectedEntry}
+                                                    isTherapist
+                                                    t={t}
+                                                    lang={lang}
+                                                />
                                             ))
                                         )}
                                     </div>
-                                </>
-                            )}
-                        </>
-                    )}
-                </div>
-            )}
+                                </div>
+                            </>
+                        )}
+                    </>
+                )}
+            </div>
 
-            {/* Entry detail drawer (therapist view) */}
+            {/* Entry detail drawer */}
             {selectedEntry && (
                 <div className="overlay" onClick={e => e.target === e.currentTarget && setSelectedEntry(null)}>
                     <div className="drawer">
@@ -322,15 +326,7 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
                             <button className="icon-btn" onClick={() => setSelectedEntry(null)}>✕</button>
                         </div>
 
-                        <div style={{
-                            background: 'var(--surface-2)',
-                            borderRadius: 'var(--radius-md)',
-                            padding: '1rem',
-                            fontSize: '0.9375rem',
-                            lineHeight: '1.7',
-                            color: 'var(--text)',
-                            whiteSpace: 'pre-wrap',
-                        }}>
+                        <div className="card mb-4" style={{ background: 'var(--surface-2)', whiteSpace: 'pre-wrap' }}>
                             {selectedEntry.text}
                         </div>
 
@@ -343,7 +339,6 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
                 </div>
             )}
 
-            {/* Settings drawer */}
             {showSettings && (
                 <NotificationSettings
                     user={user}

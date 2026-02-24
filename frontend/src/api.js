@@ -67,6 +67,9 @@ export const api = {
         getClients: () => request('GET', '/relationships/clients'),
         getTherapist: () => request('GET', '/relationships/therapist'),
         disconnect: (id) => request('DELETE', `/relationships/${id}`),
+        markViewed: (clientId) => request('POST', '/relationships/viewed', { clientId }),
+        updateNotes: (clientId, content) => request('PUT', '/relationships/notes', { clientId, content }),
+        toggleArchive: (relationshipId, isArchived) => request('PATCH', `/relationships/${relationshipId}/archive`, { isArchived }),
     },
 
     notifications: {

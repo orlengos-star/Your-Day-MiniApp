@@ -66,6 +66,15 @@ export const translations = {
         professionalObservations: "Professional Observations",
         history: "History",
         backToEntry: "Go to entry",
+        clientProfile: "Client Profile",
+        therapistDashboard: "Professional Dashboard",
+        autoSaving: "Changes are saved automatically",
+        connectedDate: "Connected since",
+        archiveClient: "Archive Client",
+        archiveClientSub: "Moves client to the archived list. You can restore them anytime.",
+        noEntriesDate: "No entries for this date.",
+        noClientsSub: "Start by inviting your first client using the link below.",
+        copyLink: "Copy Link",
     },
     ru: {
         appTitle: "Мой Дневник",
@@ -145,6 +154,15 @@ export const translations = {
         professionalObservations: "Профессиональные наблюдения",
         history: "История",
         backToEntry: "Перейти к записи",
+        clientProfile: "Профиль клиента",
+        therapistDashboard: "Личный кабинет",
+        autoSaving: "Изменения сохраняются автоматически",
+        connectedDate: "Дата подключения",
+        archiveClient: "Архивировать клиента",
+        archiveClientSub: "Клиент будет перемещен в список архивных. Вы сможете восстановить его в любой момент.",
+        noEntriesDate: "Записей за эту дату нет.",
+        noClientsSub: "Пригласите своего первого клиента, отправив ему ссылку ниже.",
+        copyLink: "Копировать ссылку",
     }
 };
 
