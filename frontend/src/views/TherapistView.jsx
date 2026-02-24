@@ -7,7 +7,7 @@ import TherapistNotes from '../components/TherapistNotes.jsx';
 import NotificationSettings from '../components/NotificationSettings.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 
-export default function TherapistView({ startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
+export default function TherapistView({ user, onUserChange, startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
     const today = new Date().toISOString().split('T')[0];
     const currentMonthDefault = today.slice(0, 7);
 
@@ -346,6 +346,8 @@ export default function TherapistView({ startParam, theme, onThemeChange, telegr
             {/* Settings drawer */}
             {showSettings && (
                 <NotificationSettings
+                    user={user}
+                    onUserChange={onUserChange}
                     onClose={() => setShowSettings(false)}
                     lang={lang}
                     onLangChange={onLangChange}

@@ -49,7 +49,39 @@ app.use(express.json());
 // ── API Routes (protected by Telegram initData auth) ─────────────────────────
 
 app.use('/api', validateInitData);
-app.get('/api/me', (req, res) => res.json(req.telegramUser));
+app.get('/api/me', (req, res) => {
+    const telegramId = String(req.telegramUser.id);
+    const { db, upsertUser } = require('./db');
+    const name = [req.telegramUser.first_name, req.telegramUser.last_name].filter(Boolean).join(' ');
+    const user = upsertUser(telegramId, name);
+    res.json(user);
+});
+
+app.put('/api/me', (req, res) => {
+    const { role, onboardingStatus } = req.body;
+    const telegramId = String(req.telegramUser.id);
+    const { db } = require('./db');
+
+    const updates = [];
+    const values = [];
+
+    if (role !== undefined) {
+        updates.push('role = ?');
+        values.push(role);
+    }
+    if (onboardingStatus !== undefined) {
+        updates.push('onboardingStatus = ?');
+        values.push(onboardingStatus);
+    }
+
+    if (updates.length > 0) {
+        values.push(telegramId);
+        db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE telegramId = ?`).run(...values);
+    }
+
+    const updatedUser = db.prepare('SELECT * FROM users WHERE telegramId = ?').get(telegramId);
+    res.json(updatedUser);
+});
 
 app.use('/api/entries', entriesRouter);
 app.use('/api/ratings', ratingsRouter);

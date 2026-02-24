@@ -244,6 +244,8 @@ export default function ClientView({ startParam, theme, onThemeChange, telegramC
             {/* Settings drawer */}
             {showSettings && (
                 <NotificationSettings
+                    user={user}
+                    onUserChange={onUserChange}
                     onClose={() => setShowSettings(false)}
                     therapist={therapist}
                     onInviteTherapist={handleInviteTherapist}

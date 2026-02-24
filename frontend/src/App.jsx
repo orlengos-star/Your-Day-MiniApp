@@ -78,6 +78,8 @@ export default function App() {
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
 
     const commonProps = {
+        user,
+        onUserChange: setUser,
         startParam,
         theme,
         onThemeChange: setTheme,

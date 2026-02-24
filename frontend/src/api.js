@@ -42,6 +42,7 @@ async function request(method, path, body) {
 // ── Journal Entries ───────────────────────────────────────────────────────────
 export const api = {
     getProfile: () => request('GET', '/me'),
+    updateProfile: (body) => request('PUT', '/me', body),
     entries: {
         list: (params = {}) => {
             const q = new URLSearchParams(params).toString();

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { api } from '../api.js';
 
 export default function NotificationSettings({
+    user,
+    onUserChange,
     onClose,
     therapist,
     onInviteTherapist,
@@ -73,91 +75,111 @@ export default function NotificationSettings({
                     </button>
                 </div>
 
-                <div className="section-title mb-2">{t('notifications')}</div>
-                <div className="card mb-4">
-                    {/* Enable/disable */}
-                    <div className="settings-row">
-                        <div>
-                            <div className="settings-label">{t('dailyReminders')}</div>
-                            <div className="settings-sublabel">{t('dailyRemindersSub')}</div>
-                        </div>
-                        <label className="toggle">
-                            <input
-                                type="checkbox"
-                                checked={!!settings.enabled}
-                                onChange={e => update({ enabled: e.target.checked })}
-                            />
-                            <span className="toggle-slider" />
-                        </label>
-                    </div>
-
-                    {/* Reminder time */}
-                    {settings.enabled ? (
-                        <div className="settings-row">
-                            <div>
-                                <div className="settings-label">{t('reminderTime')}</div>
-                                <div className="settings-sublabel">{t('reminderTimeSub')}</div>
-                            </div>
-                            <input
-                                type="time"
-                                className="input"
-                                value={settings.reminderTime}
-                                onChange={e => update({ reminderTime: e.target.value })}
-                                style={{ width: 'auto', padding: '0.375rem 0.5rem', fontSize: '0.875rem' }}
-                            />
-                        </div>
-                    ) : null}
+                <div className="section-title mb-2">{t('role')}</div>
+                <div className="flex gap-2 mb-4">
+                    <button
+                        className={`btn btn-sm ${user?.role === 'client' ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => api.updateProfile({ role: 'client' }).then(onUserChange)}
+                        style={{ flex: 1 }}
+                    >
+                        📝 {t('rolePersonal')}
+                    </button>
+                    <button
+                        className={`btn btn-sm ${user?.role === 'therapist' ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => api.updateProfile({ role: 'therapist' }).then(onUserChange)}
+                        style={{ flex: 1 }}
+                    >
+                        🧠 {t('roleProfessional')}
+                    </button>
                 </div>
 
-                {/* Therapist Connection */}
-                <div className="section-title mb-2">{t('therapist')}</div>
-                <div className="card mb-4">
-                    {therapist ? (
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="settings-label">{t('connectedWith', therapist.name)}</div>
-                                <div className="settings-sublabel">{t('connectedOn', new Date(therapist.connectedAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB'))}</div>
+                {/* Personal Settings: Shown in Client role */}
+                {user?.role === 'client' && (
+                    <>
+                        <div className="section-title mb-2">{t('notifications')}</div>
+                        <div className="card mb-4">
+                            <div className="settings-row">
+                                <div>
+                                    <div className="settings-label">{t('dailyReminders')}</div>
+                                    <div className="settings-sublabel">{t('dailyRemindersSub')}</div>
+                                </div>
+                                <label className="toggle">
+                                    <input
+                                        type="checkbox"
+                                        checked={!!settings.enabled}
+                                        onChange={e => update({ enabled: e.target.checked })}
+                                    />
+                                    <span className="toggle-slider" />
+                                </label>
                             </div>
-                            <button className="btn btn-ghost btn-sm" onClick={onDisconnect}>{t('disconnect')}</button>
-                        </div>
-                    ) : (
-                        <div>
-                            <div className="settings-label">{t('notConnected')}</div>
-                            <div className="settings-sublabel mb-3">{t('inviteSub')}</div>
 
-                            {inviteLink ? (
-                                <div style={{
-                                    background: 'var(--surface-2)',
-                                    padding: '0.75rem',
-                                    borderRadius: 'var(--radius-sm)',
-                                    fontSize: '0.75rem',
-                                    wordBreak: 'break-all',
-                                    marginBottom: '0.5rem',
-                                    color: 'var(--text-2)'
-                                }}>
-                                    {inviteLink}
-                                    <button
-                                        className="btn btn-primary btn-sm w-full mt-2"
-                                        onClick={() => navigator.clipboard?.writeText(inviteLink)}
-                                    >
-                                        📋 {t('copyInvite')}
-                                    </button>
+                            {settings.enabled ? (
+                                <div className="settings-row">
+                                    <div>
+                                        <div className="settings-label">{t('reminderTime')}</div>
+                                        <div className="settings-sublabel">{t('reminderTimeSub')}</div>
+                                    </div>
+                                    <input
+                                        type="time"
+                                        className="input"
+                                        value={settings.reminderTime}
+                                        onChange={e => update({ reminderTime: e.target.value })}
+                                        style={{ width: 'auto', padding: '0.375rem 0.5rem', fontSize: '0.875rem' }}
+                                    />
+                                </div>
+                            ) : null}
+                        </div>
+
+                        <div className="section-title mb-2">{t('therapist')}</div>
+                        <div className="card mb-4">
+                            {therapist ? (
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <div className="settings-label">{t('connectedWith', therapist.name)}</div>
+                                        <div className="settings-sublabel">{t('connectedOn', new Date(therapist.connectedAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB'))}</div>
+                                    </div>
+                                    <button className="btn btn-ghost btn-sm" onClick={onDisconnect}>{t('disconnect')}</button>
                                 </div>
                             ) : (
-                                <button
-                                    className="btn btn-primary btn-sm w-full"
-                                    onClick={onInviteTherapist}
-                                    disabled={inviteLoading}
-                                >
-                                    {inviteLoading ? t('generating') : `🔗 ${t('generateInvite')}`}
-                                </button>
+                                <div>
+                                    <div className="settings-label">{t('notConnected')}</div>
+                                    <div className="settings-sublabel mb-3">{t('inviteSub')}</div>
+
+                                    {inviteLink ? (
+                                        <div style={{
+                                            background: 'var(--surface-2)',
+                                            padding: '0.75rem',
+                                            borderRadius: 'var(--radius-sm)',
+                                            fontSize: '0.75rem',
+                                            wordBreak: 'break-all',
+                                            marginBottom: '0.5rem',
+                                            color: 'var(--text-2)'
+                                        }}>
+                                            {inviteLink}
+                                            <button
+                                                className="btn btn-primary btn-sm w-full mt-2"
+                                                onClick={() => navigator.clipboard?.writeText(inviteLink)}
+                                            >
+                                                📋 {t('copyInvite')}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            className="btn btn-primary btn-sm w-full"
+                                            onClick={onInviteTherapist}
+                                            disabled={inviteLoading}
+                                        >
+                                            {inviteLoading ? t('generating') : `🔗 ${t('generateInvite')}`}
+                                        </button>
+                                    )}
+                                </div>
                             )}
                         </div>
-                    )}
-                </div>
+                    </>
+                )}
 
-                {/* Therapist-specific settings (if user is therapist) */}
-                {settings.therapistMode !== undefined && (
+                {/* Professional Settings: Shown in Therapist role */}
+                {user?.role === 'therapist' && settings.therapistMode !== undefined && (
                     <div className="card mt-3">
                         <div className="section-title mb-2">{t('professionalMode')}</div>
 
