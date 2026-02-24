@@ -1187,3 +1187,8 @@ p {
   background: var(--accent-light);
   border-color: var(--accent);
 }
+
+.calendar-day.other-month {
+  opacity: 0.35;
+  filter: grayscale(0.5);
+}

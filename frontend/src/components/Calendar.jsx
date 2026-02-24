@@ -55,39 +55,68 @@ export default function Calendar({
 
     const entryDates = useMemo(() => new Set(entries.map(e => e.entryDate)), [entries]);
 
-    const { cells, selectedWeekIndex } = useMemo(() => {
-        const firstDay = new Date(year, month - 1, 1);
-        const startOffset = (firstDay.getDay() + 6) % 7;
-        const daysInMonth = new Date(year, month, 0).getDate();
+    // Build the grid (always 42 cells, starting from Monday of the first week)
+    const { cells, selectedWeekIndex, headerMonthName, headerYear } = useMemo(() => {
+        const firstOfMonth = new Date(year, month - 1, 1);
+        // Find Monday of the week containing the 1st (0=Sun, 1=Mon... 6=Sat)
+        // We want (day + 6) % 7 to get 0 for Monday
+        const startOffset = (firstOfMonth.getDay() + 6) % 7;
+
+        const startDate = new Date(firstOfMonth);
+        startDate.setDate(firstOfMonth.getDate() - startOffset);
 
         const allCells = [];
-        for (let i = 0; i < startOffset; i++) allCells.push(null);
-        for (let d = 1; d <= daysInMonth; d++) allCells.push(d);
-
-        // Pad to full weeks
-        while (allCells.length % 7 !== 0) allCells.push(null);
+        for (let i = 0; i < 42; i++) {
+            const d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
+            const iso = d.toISOString().split('T')[0];
+            allCells.push({
+                date: iso,
+                dayNum: d.getDate(),
+                isCurrentMonth: d.getMonth() === month - 1 && d.getFullYear() === year
+            });
+        }
 
         let sIndex = 0;
         if (selectedDate) {
-            const [sYear, sMonth, sDay] = selectedDate.split('-').map(Number);
-            if (sYear === year && sMonth === month) {
-                const dayIndexInGrid = startOffset + sDay - 1;
-                sIndex = Math.floor(dayIndexInGrid / 7);
+            const foundIndex = allCells.findIndex(c => c.date === selectedDate);
+            if (foundIndex !== -1) {
+                sIndex = Math.floor(foundIndex / 7);
             }
         }
 
-        return { cells: allCells, selectedWeekIndex: sIndex };
-    }, [year, month, selectedDate]);
+        // Title logic: If collapsed, show the month of the selected date
+        let hName = monthName;
+        let hYear = year;
+        if (!isExpanded && selectedDate) {
+            const [sYear, sMonth] = selectedDate.split('-').map(Number);
+            const d = new Date(sYear, sMonth - 1, 1);
+            hName = new Intl.DateTimeFormat(locale, { month: 'long' }).format(d);
+            hYear = sYear;
+        }
+
+        return {
+            cells: allCells,
+            selectedWeekIndex: sIndex,
+            headerMonthName: hName,
+            headerYear: hYear
+        };
+    }, [year, month, selectedDate, isExpanded, locale, monthName]);
 
     function prev() {
         if (isExpanded) {
             const d = new Date(year, month - 2, 1);
             onMonthChange(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
         } else {
-            // In week mode, move 7 days back
             const current = new Date(selectedDate);
             current.setDate(current.getDate() - 7);
-            onDaySelect(current.toISOString().split('T')[0]);
+            const iso = current.toISOString().split('T')[0];
+            onDaySelect(iso);
+            // If the new date is in a different month, sync currentMonth
+            const [ny, nm] = iso.split('-').slice(0, 2);
+            if (`${ny}-${nm}` !== currentMonth) {
+                onMonthChange(`${ny}-${nm}`);
+            }
         }
     }
 
@@ -96,10 +125,15 @@ export default function Calendar({
             const d = new Date(year, month, 1);
             onMonthChange(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
         } else {
-            // In week mode, move 7 days forward
             const current = new Date(selectedDate);
             current.setDate(current.getDate() + 7);
-            onDaySelect(current.toISOString().split('T')[0]);
+            const iso = current.toISOString().split('T')[0];
+            onDaySelect(iso);
+            // If the new date is in a different month, sync currentMonth
+            const [ny, nm] = iso.split('-').slice(0, 2);
+            if (`${ny}-${nm}` !== currentMonth) {
+                onMonthChange(`${ny}-${nm}`);
+            }
         }
     }
 
@@ -112,7 +146,7 @@ export default function Calendar({
             <div className="calendar-header">
                 <button className="icon-btn" onClick={prev} aria-label="Previous">‹</button>
                 <span className="calendar-month" onClick={() => setIsExpanded(!isExpanded)}>
-                    {monthName} {year}
+                    {headerMonthName} {headerYear}
                     <span className="expand-icon">{isExpanded ? ' ▴' : ' ▾'}</span>
                 </span>
                 <button className="icon-btn" onClick={next} aria-label="Next">›</button>
@@ -124,25 +158,23 @@ export default function Calendar({
                         <div key={d} className="calendar-day-label">{d}</div>
                     ))}
 
-                    {displayedCells.map((day, i) => {
-                        if (!day) return <div key={`empty-${i}`} className="calendar-day empty" />;
-
-                        const dateStr = `${currentMonth}-${String(day).padStart(2, '0')}`;
-                        const rating = ratingMap[dateStr];
-                        const hasEntry = entryDates.has(dateStr);
-                        const isToday = dateStr === today;
-                        const isSelected = dateStr === selectedDate;
+                    {displayedCells.map((cell) => {
+                        const { date, dayNum, isCurrentMonth } = cell;
+                        const rating = ratingMap[date];
+                        const hasEntry = entryDates.has(date);
+                        const isToday = date === today;
+                        const isSelected = date === selectedDate;
 
                         return (
                             <div
-                                key={dateStr}
-                                className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
-                                onClick={() => onDaySelect(dateStr)}
+                                key={date}
+                                className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}
+                                onClick={() => onDaySelect(date)}
                                 role="button"
-                                aria-label={`${day} ${monthName}`}
+                                aria-label={`${dayNum} ${headerMonthName}`}
                                 aria-pressed={isSelected}
                             >
-                                <span>{day}</span>
+                                <span>{dayNum}</span>
                                 {hasEntry && (
                                     <div
                                         className="day-dot"
