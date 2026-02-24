@@ -9,7 +9,7 @@ export default function ClientList({ clients, onSelectClient, onToggleArchive, o
 
     return (
         <div className="client-list-container">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mt-2 mb-4">
                 <div className="flex gap-2 p-1 bg-surface-2 rounded-lg" style={{ width: 'fit-content' }}>
                     <button
                         className={`btn btn-sm ${activeSubTab === 'active' ? 'btn-primary' : 'btn-ghost'}`}
@@ -79,28 +79,18 @@ export default function ClientList({ clients, onSelectClient, onToggleArchive, o
                                 <div style={{ flex: 1 }}>
                                     <div className="flex items-center gap-2">
                                         <h3 style={{ fontSize: '1rem', margin: 0 }}>{client.name || `Client #${client.id}`}</h3>
-                                        {client.unreadCount > 0 && (
-                                            <span className="badge badge-primary" style={{ minWidth: '1.25rem', height: '1.25rem' }}>
-                                                {client.unreadCount}
-                                            </span>
-                                        )}
                                     </div>
                                     <div className="text-xs text-muted mt-1 truncate" style={{ maxWidth: '200px' }}>
                                         {client.professionalNote || (lang === 'ru' ? 'Заметок пока нет' : 'No notes yet')}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        className="btn btn-ghost btn-sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onToggleArchive(client.relationshipId, !client.isArchived);
-                                        }}
-                                        title={client.isArchived ? t('unarchive') : t('archive')}
-                                    >
-                                        {client.isArchived ? '📥' : '📦'}
-                                    </button>
-                                    <div className="text-muted" style={{ fontSize: '0.875rem' }}>›</div>
+                                <div className="flex items-center gap-3">
+                                    {client.unreadCount > 0 && (
+                                        <span className="badge badge-primary" style={{ minWidth: '1.25rem', height: '1.25rem' }}>
+                                            {client.unreadCount}
+                                        </span>
+                                    )}
+                                    <div className="text-muted" style={{ fontSize: '1rem' }}>›</div>
                                 </div>
                             </div>
                         </div>

@@ -314,7 +314,7 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
                 <div className="overlay" onClick={e => e.target === e.currentTarget && setSelectedEntry(null)}>
                     <div className="drawer">
                         <div className="drawer-handle" />
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mt-4 mb-4">
                             <div>
                                 <h3>{lang === 'ru' ? 'Запись в дневнике' : 'Journal Entry'}</h3>
                                 <div className="text-xs text-muted mt-1">
