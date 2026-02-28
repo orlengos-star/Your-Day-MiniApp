@@ -147,10 +147,13 @@ export default function ClientView({ user, onUserChange, startParam, theme, onTh
         <>
             {/* Header */}
             <header className="app-header">
-                <div>
-                    <h1>🌿 {t('appTitle')}</h1>
-                    <div className="header-subtitle">
-                        {therapist ? t('connectedWith', therapist.name) : t('personalJournal')}
+                <div className="flex items-center gap-3">
+                    <img src="/logo.png" alt="Logo" className="app-logo" />
+                    <div>
+                        <h1>{t('appTitle')}</h1>
+                        <div className="header-subtitle">
+                            {therapist ? t('connectedWith', therapist.name) : t('personalJournal')}
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">

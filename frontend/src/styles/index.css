@@ -164,6 +164,15 @@ p {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text);
+  margin: 0;
+}
+
+.app-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .header-subtitle {

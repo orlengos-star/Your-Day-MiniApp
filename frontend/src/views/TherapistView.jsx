@@ -159,8 +159,11 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
                     {selectedClientId && (
                         <button className="icon-btn" onClick={() => setSelectedClientId(null)}>←</button>
                     )}
+                    {!selectedClientId && (
+                        <img src="/logo.png" alt="Logo" className="app-logo" />
+                    )}
                     <div>
-                        <h1>{selectedClientId ? (selectedClient?.name || 'Client') : `🌿 ${t('appTitle')}`}</h1>
+                        <h1>{selectedClientId ? (selectedClient?.name || 'Client') : t('appTitle')}</h1>
                         <div className="header-subtitle">{selectedClientId ? t('clientProfile') : t('therapistDashboard')}</div>
                     </div>
                 </div>
