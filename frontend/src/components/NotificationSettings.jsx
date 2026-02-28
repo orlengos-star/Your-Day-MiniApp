@@ -22,11 +22,12 @@ export default function NotificationSettings({
     }, []);
 
     async function update(patch) {
-        const optimistic = { ...settings, ...patch };
+        const payload = { ...patch, timezoneOffset: new Date().getTimezoneOffset() };
+        const optimistic = { ...settings, ...payload };
         setSettings(optimistic);
         setSaving(true);
         try {
-            const updated = await api.notifications.updateSettings(patch);
+            const updated = await api.notifications.updateSettings(payload);
             setSettings(updated);
         } catch (err) {
             setSettings(settings); // revert

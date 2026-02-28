@@ -93,6 +93,13 @@ try {
   db.exec("ALTER TABLE professional_notes ADD COLUMN sessionNotes TEXT NOT NULL DEFAULT ''");
 }
 
+try {
+  db.prepare('SELECT timezoneOffset FROM notification_settings LIMIT 1').get();
+} catch (e) {
+  console.log('Migrating database: adding timezoneOffset to notification_settings');
+  db.exec("ALTER TABLE notification_settings ADD COLUMN timezoneOffset INTEGER NOT NULL DEFAULT 0");
+}
+
 // ── Helper: upsert user from Telegram data ────────────────────────────────────
 
 function upsertUser(telegramId, name) {

@@ -10,24 +10,40 @@ function initScheduler(bot) {
     cron.schedule('* * * * *', () => {
         if (!botRef) return;
 
-        const now = new Date();
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        const today = now.toISOString().split('T')[0];
+        const now = new Date(); // Server local time
+        // Calculate current UTC time in minutes since midnight
+        const utcMinutesSinceMidnight = now.getUTCHours() * 60 + now.getUTCMinutes();
+        const todayUtcDate = now.toISOString().split('T')[0];
 
         // ── Client reminders ─────────────────────────────────────────────────────
-        const clientsToRemind = db.prepare(`
-      SELECT u.telegramId, u.name, COALESCE(ns.reminderTime, '20:00') as reminderTime,
+        // We need to fetch all active schedules, then compute in JS if their local time matches
+        const activeClients = db.prepare(`
+      SELECT u.id, u.telegramId, u.name, 
+             COALESCE(ns.reminderTime, '20:00') as reminderTime,
+             COALESCE(ns.timezoneOffset, 0) as timezoneOffset,
              COUNT(je.id) as entryCount
       FROM users u
       LEFT JOIN notification_settings ns ON ns.userId = u.id
       LEFT JOIN journal_entries je ON je.userId = u.id AND je.entryDate = ?
       WHERE u.role = 'client'
         AND COALESCE(ns.enabled, 1) = 1
-        AND COALESCE(ns.reminderTime, '20:00') = ?
       GROUP BY u.id
-    `).all(today, currentTime);
+    `).all(todayUtcDate);
 
-        for (const client of clientsToRemind) {
+        for (const client of activeClients) {
+            // JS offsets are inverted: UTC = Local + Offset
+            // So Local = UTC - Offset
+            let localMinutes = utcMinutesSinceMidnight - client.timezoneOffset;
+
+            // Handle day wrapping
+            if (localMinutes < 0) localMinutes += 24 * 60;
+            if (localMinutes >= 24 * 60) localMinutes -= 24 * 60;
+
+            const localH = Math.floor(localMinutes / 60);
+            const localM = localMinutes % 60;
+            const currentLocalTimeStr = `${String(localH).padStart(2, '0')}:${String(localM).padStart(2, '0')}`;
+
+            if (currentLocalTimeStr !== client.reminderTime) continue;
             if (client.entryCount === 0) {
                 botRef.sendMessage(client.telegramId,
                     `🌿 Hey ${client.name}, you haven't written anything today yet.\n\nHow are you feeling? Even a few words can help. 💙`,
@@ -48,17 +64,27 @@ function initScheduler(bot) {
         }
 
         // ── Therapist batch digest ────────────────────────────────────────────────
-        const therapistsBatch = db.prepare(`
-      SELECT u.telegramId, u.id as therapistDbId, ns.batchTime
+        const activeTherapists = db.prepare(`
+      SELECT u.telegramId, u.id as therapistDbId, 
+             COALESCE(ns.batchTime, '18:00') as batchTime,
+             COALESCE(ns.timezoneOffset, 0) as timezoneOffset
       FROM users u
       JOIN notification_settings ns ON ns.userId = u.id
       WHERE u.role = 'therapist'
         AND ns.enabled = 1
         AND ns.therapistMode = 'batch_digest'
-        AND ns.batchTime = ?
-    `).all(currentTime);
+    `).all();
 
-        for (const therapist of therapistsBatch) {
+        for (const therapist of activeTherapists) {
+            let localMinutes = utcMinutesSinceMidnight - therapist.timezoneOffset;
+            if (localMinutes < 0) localMinutes += 24 * 60;
+            if (localMinutes >= 24 * 60) localMinutes -= 24 * 60;
+
+            const localH = Math.floor(localMinutes / 60);
+            const localM = localMinutes % 60;
+            const currentLocalTimeStr = `${String(localH).padStart(2, '0')}:${String(localM).padStart(2, '0')}`;
+
+            if (currentLocalTimeStr !== therapist.batchTime) continue;
             const newEntries = db.prepare(`
         SELECT je.text, u.name, je.createdAt
         FROM journal_entries je

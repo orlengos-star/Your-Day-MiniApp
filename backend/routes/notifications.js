@@ -20,7 +20,7 @@ router.put('/settings', (req, res) => {
     const user = getDbUser(req);
     ensureNotificationSettings(user.id);
 
-    const { enabled, reminderTime, therapistMode, batchTime } = req.body;
+    const { enabled, reminderTime, therapistMode, batchTime, timezoneOffset } = req.body;
 
     const updates = [];
     const values = [];
@@ -29,6 +29,7 @@ router.put('/settings', (req, res) => {
     if (reminderTime !== undefined) { updates.push('reminderTime = ?'); values.push(reminderTime); }
     if (therapistMode !== undefined) { updates.push('therapistMode = ?'); values.push(therapistMode); }
     if (batchTime !== undefined) { updates.push('batchTime = ?'); values.push(batchTime); }
+    if (timezoneOffset !== undefined) { updates.push('timezoneOffset = ?'); values.push(timezoneOffset); }
 
     if (updates.length > 0) {
         values.push(user.id);
