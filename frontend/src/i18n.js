@@ -75,6 +75,10 @@ export const translations = {
         noEntriesDate: "No entries for this date.",
         noClientsSub: "Start by inviting your first client using the link below.",
         copyLink: "Copy Link",
+        nextSessionNotes: "Next Session Notes",
+        sessionNotesPlaceholder: "What do you want to discuss next session?",
+        clientBio: "Client Background (BIO)",
+        bioPlaceholder: "Long-term history, diagnoses, context...",
     },
     ru: {
         appTitle: "Мой Дневник",
@@ -163,6 +167,10 @@ export const translations = {
         noEntriesDate: "Записей за эту дату нет.",
         noClientsSub: "Пригласите своего первого клиента, отправив ему ссылку ниже.",
         copyLink: "Копировать ссылку",
+        nextSessionNotes: "Заметки к следующей сессии",
+        sessionNotesPlaceholder: "О чем вы хотите поговорить на следующей сессии?",
+        clientBio: "Карточка клиента (BIO)",
+        bioPlaceholder: "Долгосрочная информация, история, диагнозы...",
     }
 };
 

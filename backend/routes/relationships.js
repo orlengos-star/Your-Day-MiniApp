@@ -59,7 +59,8 @@ router.get('/clients', (req, res) => {
         r.id as relationshipId,
         r.isArchived,
         r.lastViewedAt,
-        pn.content as professionalNote,
+        pn.content as bio,
+        pn.sessionNotes,
         count(je.id) as unreadCount
     FROM relationships r
     JOIN users u ON u.id = r.clientId
@@ -102,17 +103,22 @@ router.post('/viewed', (req, res) => {
 // PUT /api/relationships/notes — update professional notes for a client
 router.put('/notes', (req, res) => {
     const user = getDbUser(req);
-    const { clientId, content } = req.body;
+    const { clientId, bio, sessionNotes } = req.body;
+
+    const existing = db.prepare('SELECT content, sessionNotes FROM professional_notes WHERE clientId = ? AND therapistId = ?').get(clientId, user.id) || {};
+    const finalBio = bio !== undefined ? bio : (existing.content || '');
+    const finalSessionNotes = sessionNotes !== undefined ? sessionNotes : (existing.sessionNotes || '');
 
     db.prepare(`
-    INSERT INTO professional_notes (clientId, therapistId, content, updatedAt)
-    VALUES (?, ?, ?, datetime('now'))
+    INSERT INTO professional_notes (clientId, therapistId, content, sessionNotes, updatedAt)
+    VALUES (?, ?, ?, ?, datetime('now'))
     ON CONFLICT(clientId, therapistId) DO UPDATE SET
       content = excluded.content,
+      sessionNotes = excluded.sessionNotes,
       updatedAt = excluded.updatedAt
-  `).run(clientId, user.id, content || '');
+  `).run(clientId, user.id, finalBio, finalSessionNotes);
 
-    res.json({ success: true });
+    res.json({ success: true, bio: finalBio, sessionNotes: finalSessionNotes });
 });
 
 // GET /api/relationships/therapist — get the client's connected therapist

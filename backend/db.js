@@ -84,6 +84,15 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_prof_notes_lookup ON professional_notes(clientId, therapistId);
 `);
 
+// ── Migrations ────────────────────────────────────────────────────────────────
+
+try {
+  db.prepare('SELECT sessionNotes FROM professional_notes LIMIT 1').get();
+} catch (e) {
+  console.log('Migrating database: adding sessionNotes to professional_notes');
+  db.exec("ALTER TABLE professional_notes ADD COLUMN sessionNotes TEXT NOT NULL DEFAULT ''");
+}
+
 // ── Helper: upsert user from Telegram data ────────────────────────────────────
 
 function upsertUser(telegramId, name) {

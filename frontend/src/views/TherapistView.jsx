@@ -7,6 +7,7 @@ import TherapistNotes from '../components/TherapistNotes.jsx';
 import NotificationSettings from '../components/NotificationSettings.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import ClientList from '../components/ClientList.jsx';
+import ClientProfileCard from '../components/ClientProfileCard.jsx';
 
 export default function TherapistView({ user, onUserChange, startParam, theme, onThemeChange, telegramColorScheme, lang, onLangChange, t }) {
     const today = new Date().toISOString().split('T')[0];
@@ -120,13 +121,8 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
         }
     }
 
-    async function handleNotesUpdate(content) {
-        try {
-            await api.relationships.updateNotes(selectedClientId, content);
-            setClients(prev => prev.map(c => c.id === selectedClientId ? { ...c, professionalNote: content } : c));
-        } catch (err) {
-            alert('Failed to save notes: ' + err.message);
-        }
+    function handleProfileUpdate(clientId, updates) {
+        setClients(prev => prev.map(c => c.id === clientId ? { ...c, ...updates } : c));
     }
 
     async function handleTherapistRating(value) {
@@ -205,44 +201,13 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
                         </div>
 
                         {activeDetailTab === 'card' && (
-                            <div className="flex flex-col gap-4">
-                                <section className="card">
-                                    <h3 className="mb-3">{t('professionalObservations')}</h3>
-                                    <textarea
-                                        className="textarea w-full"
-                                        placeholder={t('notesPlaceholder')}
-                                        value={selectedClient?.professionalNote || ''}
-                                        onChange={(e) => handleNotesUpdate(e.target.value)}
-                                        style={{ minHeight: '150px' }}
-                                    />
-                                    <div className="text-right mt-2 text-xs text-muted italic">
-                                        {t('autoSaving')}
-                                    </div>
-                                </section>
-
-                                <div className="card">
-                                    <div className="settings-row">
-                                        <div>
-                                            <div className="settings-label">{t('connectedDate')}</div>
-                                            <div className="settings-sublabel">
-                                                {selectedClient?.connectedAt ? new Date(selectedClient.connectedAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB') : '-'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="settings-row mt-3">
-                                        <div>
-                                            <div className="settings-label">{t('archiveClient')}</div>
-                                            <div className="settings-sublabel">{t('archiveClientSub')}</div>
-                                        </div>
-                                        <button
-                                            className="btn btn-ghost btn-sm"
-                                            onClick={() => handleToggleArchive(selectedClient.relationshipId, !selectedClient.isArchived)}
-                                        >
-                                            {selectedClient?.isArchived ? t('unarchive') : t('archive')}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <ClientProfileCard
+                                client={selectedClient}
+                                onUpdate={handleProfileUpdate}
+                                onArchiveToggle={handleToggleArchive}
+                                t={t}
+                                lang={lang}
+                            />
                         )}
 
                         {activeDetailTab === 'diary' && (
