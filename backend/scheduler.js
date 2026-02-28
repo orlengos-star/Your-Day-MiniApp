@@ -2,21 +2,22 @@ const cron = require('node-cron');
 const { db } = require('./db');
 
 let botRef = null;
+let stickyMenuFn = null;
 
-function initScheduler(bot) {
+function initScheduler(bot, sendStickyMenu) {
     botRef = bot;
+    stickyMenuFn = sendStickyMenu;
 
     // Run every minute — check who needs a reminder right now
-    cron.schedule('* * * * *', () => {
+    cron.schedule('* * * * *', async () => {
         if (!botRef) return;
 
-        const now = new Date(); // Server local time
+        const now = new Date();
         // Calculate current UTC time in minutes since midnight
         const utcMinutesSinceMidnight = now.getUTCHours() * 60 + now.getUTCMinutes();
         const todayUtcDate = now.toISOString().split('T')[0];
 
         // ── Client reminders ─────────────────────────────────────────────────────
-        // We need to fetch all active schedules, then compute in JS if their local time matches
         const activeClients = db.prepare(`
       SELECT u.id, u.telegramId, u.name, 
              COALESCE(ns.reminderTime, '20:00') as reminderTime,
@@ -31,11 +32,7 @@ function initScheduler(bot) {
     `).all(todayUtcDate);
 
         for (const client of activeClients) {
-            // JS offsets are inverted: UTC = Local + Offset
-            // So Local = UTC - Offset
             let localMinutes = utcMinutesSinceMidnight - client.timezoneOffset;
-
-            // Handle day wrapping
             if (localMinutes < 0) localMinutes += 24 * 60;
             if (localMinutes >= 24 * 60) localMinutes -= 24 * 60;
 
@@ -44,23 +41,25 @@ function initScheduler(bot) {
             const currentLocalTimeStr = `${String(localH).padStart(2, '0')}:${String(localM).padStart(2, '0')}`;
 
             if (currentLocalTimeStr !== client.reminderTime) continue;
+
+            let text;
             if (client.entryCount === 0) {
-                botRef.sendMessage(client.telegramId,
-                    `🌿 Hey ${client.name}, you haven't written anything today yet.\n\nHow are you feeling? Even a few words can help. 💙`,
-                    {
-                        reply_markup: {
-                            inline_keyboard: [[{
-                                text: '✍️ Write now',
-                                callback_data: 'open_journal'
-                            }]]
-                        }
-                    }
-                ).catch(() => { });
+                text = `🕰️ Hey ${client.name}, you haven't written anything today yet.\n\nHow are you feeling? Even a few words can help. 💙`;
             } else if (client.entryCount < 3) {
-                botRef.sendMessage(client.telegramId,
-                    `🌿 You've written ${client.entryCount} ${client.entryCount === 1 ? 'entry' : 'entries'} today — great start!\n\nWant to add more before the day ends? 📝`
-                ).catch(() => { });
+                text = `🌊 You've written ${client.entryCount} ${client.entryCount === 1 ? 'entry' : 'entries'} today — great start!\n\nWant to add more before the day ends? 📝`;
+            } else {
+                continue; // Already wrote enough — don't nag
             }
+
+            // Loud: send new message so Telegram delivers a push notification
+            stickyMenuFn(client.telegramId, client.telegramId, text, {
+                reply_markup: {
+                    inline_keyboard: [[{
+                        text: '✍️ Write now',
+                        callback_data: 'open_journal'
+                    }]]
+                }
+            }, false).catch(() => { });
         }
 
         // ── Therapist batch digest ────────────────────────────────────────────────
@@ -85,6 +84,7 @@ function initScheduler(bot) {
             const currentLocalTimeStr = `${String(localH).padStart(2, '0')}:${String(localM).padStart(2, '0')}`;
 
             if (currentLocalTimeStr !== therapist.batchTime) continue;
+
             const newEntries = db.prepare(`
         SELECT je.text, u.name, je.createdAt
         FROM journal_entries je
@@ -93,7 +93,7 @@ function initScheduler(bot) {
         WHERE r.therapistId = ?
           AND je.entryDate = ?
         ORDER BY u.name, je.createdAt
-      `).all(therapist.therapistDbId, today);
+      `).all(therapist.therapistDbId, todayUtcDate);
 
             if (newEntries.length === 0) continue;
 
@@ -107,9 +107,11 @@ function initScheduler(bot) {
                 .map(([name, count]) => `• ${name}: ${count} ${count === 1 ? 'entry' : 'entries'}`)
                 .join('\n');
 
-            botRef.sendMessage(therapist.telegramId,
+            // Loud: send new message so therapist gets a push notification
+            stickyMenuFn(therapist.telegramId, therapist.telegramId,
                 `📊 *Today's Client Summary*\n\n${summary}\n\nTotal: ${newEntries.length} new ${newEntries.length === 1 ? 'entry' : 'entries'}`,
-                { parse_mode: 'Markdown' }
+                {},
+                false
             ).catch(() => { });
         }
     });

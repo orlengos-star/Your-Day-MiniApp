@@ -94,6 +94,13 @@ try {
 }
 
 try {
+  db.prepare('SELECT lastMessageId FROM users LIMIT 1').get();
+} catch (e) {
+  console.log('Migrating database: adding lastMessageId to users');
+  db.exec('ALTER TABLE users ADD COLUMN lastMessageId INTEGER DEFAULT NULL');
+}
+
+try {
   db.prepare('SELECT timezoneOffset FROM notification_settings LIMIT 1').get();
 } catch (e) {
   console.log('Migrating database: adding timezoneOffset to notification_settings');
