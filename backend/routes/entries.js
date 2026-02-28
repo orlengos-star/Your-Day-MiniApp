@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db, upsertUser } = require('../db');
+const { notifyTherapistsOfNewEntry } = require('../bot');
 
 // Helper: get db user from req.telegramUser
 function getDbUser(req) {
@@ -94,7 +95,12 @@ router.post('/', (req, res) => {
         'INSERT INTO journal_entries (userId, text, entryDate) VALUES (?, ?, ?)'
     ).run(user.id, text.trim(), date);
 
-    const entry = db.prepare('SELECT * FROM journal_entries WHERE id = ?').get(result.lastInsertRowid);
+    const entryId = result.lastInsertRowid;
+    const entry = db.prepare('SELECT * FROM journal_entries WHERE id = ?').get(entryId);
+
+    // Notify connected therapists
+    notifyTherapistsOfNewEntry(user.id, user.name, entryId);
+
     res.status(201).json(entry);
 });
 

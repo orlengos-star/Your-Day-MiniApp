@@ -2,12 +2,15 @@ const TelegramBot = require('node-telegram-bot-api');
 const { db, upsertUser } = require('./db');
 
 let bot = null;
+let globalMiniAppUrl = '';
 
 function getBot() {
     return bot;
 }
 
 function initBot(miniAppUrl) {
+    globalMiniAppUrl = miniAppUrl;
+
     if (!process.env.BOT_TOKEN) {
         console.warn('⚠️  BOT_TOKEN not set — bot will not start');
         return null;
@@ -176,36 +179,7 @@ function initBot(miniAppUrl) {
             }
         );
 
-        // Notify connected therapists who have per_client notifications enabled
-        const therapists = db.prepare(`
-      SELECT u.telegramId, ns.therapistMode
-      FROM relationships r
-      JOIN users u ON u.id = r.therapistId
-      LEFT JOIN notification_settings ns ON ns.userId = r.therapistId
-      WHERE r.clientId = ?
-    `).all(user.id);
-
-        for (const therapist of therapists) {
-            if (therapist.therapistMode === 'per_client' || !therapist.therapistMode) {
-                const settings = db.prepare(
-                    'SELECT enabled FROM notification_settings WHERE userId = (SELECT id FROM users WHERE telegramId = ?)'
-                ).get(therapist.telegramId);
-                if (settings && !settings.enabled) continue;
-
-                bot.sendMessage(therapist.telegramId,
-                    `📝 *${name}* just added a new journal entry.`,
-                    {
-                        parse_mode: 'Markdown',
-                        reply_markup: {
-                            inline_keyboard: [[{
-                                text: '👁 View entry',
-                                web_app: { url: `${miniAppUrl}?startapp=entry_${entryId}` }
-                            }]]
-                        }
-                    }
-                ).catch(() => { }); // Don't crash if therapist hasn't started the bot
-            }
-        }
+        notifyTherapistsOfNewEntry(user.id, name, entryId);
     });
 
     bot.on('polling_error', (err) => {
@@ -216,4 +190,38 @@ function initBot(miniAppUrl) {
     return bot;
 }
 
-module.exports = { initBot, getBot };
+function notifyTherapistsOfNewEntry(userId, userName, entryId) {
+    if (!bot) return;
+
+    const therapists = db.prepare(`
+      SELECT u.telegramId, ns.therapistMode
+      FROM relationships r
+      JOIN users u ON u.id = r.therapistId
+      LEFT JOIN notification_settings ns ON ns.userId = r.therapistId
+      WHERE r.clientId = ?
+    `).all(userId);
+
+    for (const therapist of therapists) {
+        if (therapist.therapistMode === 'per_client' || !therapist.therapistMode) {
+            const settings = db.prepare(
+                'SELECT enabled FROM notification_settings WHERE userId = (SELECT id FROM users WHERE telegramId = ?)'
+            ).get(therapist.telegramId);
+            if (settings && !settings.enabled) continue;
+
+            bot.sendMessage(therapist.telegramId,
+                `📝 *${userName}* just added a new journal entry.`,
+                {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [[{
+                            text: '👁 View entry',
+                            web_app: { url: `${globalMiniAppUrl}?startapp=entry_${entryId}` }
+                        }]]
+                    }
+                }
+            ).catch(() => { }); // Don't crash if therapist hasn't started the bot
+        }
+    }
+}
+
+module.exports = { initBot, getBot, notifyTherapistsOfNewEntry };
