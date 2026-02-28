@@ -31,7 +31,7 @@ export default function NotificationSettings({
             setSettings(updated);
         } catch (err) {
             setSettings(settings); // revert
-            alert('Failed to save: ' + err.message);
+            alert(t('errorSave'));
         } finally {
             setSaving(false);
         }

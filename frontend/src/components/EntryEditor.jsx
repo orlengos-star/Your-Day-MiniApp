@@ -38,7 +38,7 @@ export default function EntryEditor({ entry, date, onSave, onClose, onDelete, t,
             }
             onSave(saved);
         } catch (err) {
-            alert('Failed to save: ' + err.message);
+            alert(t('errorSave'));
         } finally {
             setSaving(false);
         }

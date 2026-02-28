@@ -1,6 +1,6 @@
 export const translations = {
     en: {
-        appTitle: "My Journal",
+        appTitle: "Your Day",
         personalJournal: "Personal Diary",
         therapistView: "Professional Dashboard",
         settings: "Settings",
@@ -41,7 +41,7 @@ export const translations = {
         notesPlaceholder: "Add your professional observations...",
         highlightedBadge: "Highlighted",
         hasNotes: "Has notes",
-        rateDay: "How was your day?",
+        rateDay: "Rate this day",
         great: "Great",
         good: "Good",
         neutral: "Neutral",
@@ -79,9 +79,15 @@ export const translations = {
         sessionNotesPlaceholder: "What do you want to discuss next session?",
         clientBio: "Client Background (BIO)",
         bioPlaceholder: "Long-term history, diagnoses, context...",
+        journalEntry: "Journal Entry",
+        therapistComments: "Your comment",
+        addComment: "Add a comment about this entry...",
+        highlightEntry: "Important",
+        errorSave: "Failed to save. Please try again.",
+        errorSaveNote: "Failed to save comment. Please try again.",
     },
     ru: {
-        appTitle: "Мой Дневник",
+        appTitle: "Твой День",
         personalJournal: "Личный дневник",
         therapistView: "Личный кабинет терапевта",
         settings: "Настройки",
@@ -122,7 +128,7 @@ export const translations = {
         notesPlaceholder: "Ваши профессиональные наблюдения...",
         highlightedBadge: "Важное",
         hasNotes: "Есть заметки",
-        rateDay: "Как прошел ваш день?",
+        rateDay: "Оцените этот день",
         great: "Отлично",
         good: "Хорошо",
         neutral: "Нормально",
@@ -171,6 +177,12 @@ export const translations = {
         sessionNotesPlaceholder: "О чем вы хотите поговорить на следующей сессии?",
         clientBio: "Карточка клиента (BIO)",
         bioPlaceholder: "Долгосрочная информация, история, диагнозы...",
+        journalEntry: "Запись в дневнике",
+        therapistComments: "Ваш комментарий",
+        addComment: "Добавьте комментарий к этой записи...",
+        highlightEntry: "Важное",
+        errorSave: "Не удалось сохранить. Попробуйте ещё раз.",
+        errorSaveNote: "Не удалось сохранить комментарий. Попробуйте ещё раз.",
     }
 };
 

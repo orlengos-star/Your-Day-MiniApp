@@ -284,7 +284,7 @@ export default function TherapistView({ user, onUserChange, startParam, theme, o
                         <div className="drawer-handle" />
                         <div className="flex items-center justify-between mt-4 mb-4">
                             <div>
-                                <h3>{lang === 'ru' ? 'Запись в дневнике' : 'Journal Entry'}</h3>
+                                <h3>{t('journalEntry')}</h3>
                                 <div className="text-xs text-muted mt-1">
                                     {new Date(selectedEntry.createdAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-GB', {
                                         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'

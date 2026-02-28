@@ -18,7 +18,7 @@ export default function TherapistNotes({ entry, onUpdate, t }) {
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);
         } catch (err) {
-            alert('Failed to save notes: ' + err.message);
+            alert(t('errorSaveNote'));
         } finally {
             setSaving(false);
         }
