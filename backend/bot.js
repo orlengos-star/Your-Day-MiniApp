@@ -1,5 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 const { db, upsertUser } = require('./db');
+const { t } = require('./bot_i18n');
 
 let bot = null;
 let globalMiniAppUrl = '';
@@ -8,26 +9,38 @@ function getBot() {
     return bot;
 }
 
-// ── Sticky Message Helpers ────────────────────────────────────────────────────
+// ── Language helper ───────────────────────────────────────────────────────────
 
 /**
- * Delete a user's incoming message silently (best-effort).
+ * Detect user's language from Telegram's language_code field.
+ * Defaults to 'ru' for any non-English code.
  */
+function detectLang(fromObj) {
+    const code = fromObj?.language_code || '';
+    return code.startsWith('en') ? 'en' : 'ru';
+}
+
+/**
+ * Get a user's saved language from the DB, or detect from the message and save it.
+ */
+function getUserLang(user, fromObj) {
+    if (user.lang) return user.lang;
+    const lang = detectLang(fromObj);
+    db.prepare("UPDATE users SET lang = ? WHERE id = ?").run(lang, user.id);
+    return lang;
+}
+
+// ── Sticky Message Helpers ────────────────────────────────────────────────────
+
 function deleteUserMessage(chatId, messageId) {
     if (!bot || !messageId) return;
     bot.deleteMessage(chatId, messageId).catch(() => { });
 }
 
-/**
- * Save the latest sticky message ID for a user in the DB.
- */
 function saveLastMessageId(telegramId, messageId) {
     db.prepare('UPDATE users SET lastMessageId = ? WHERE telegramId = ?').run(messageId, String(telegramId));
 }
 
-/**
- * Delete the old sticky message for a user (best-effort).
- */
 function clearOldStickyMessage(chatId, oldMessageId) {
     if (!bot || !oldMessageId) return;
     bot.deleteMessage(chatId, oldMessageId).catch(() => { });
@@ -35,8 +48,8 @@ function clearOldStickyMessage(chatId, oldMessageId) {
 
 /**
  * Send the standard "Open App" sticky menu.
- * - If silent=true:  edits the existing sticky message (no push notification)
- * - If silent=false: sends a NEW message (triggers notification), deletes the old one
+ * - silent=true:  edits the existing sticky message (no push notification)
+ * - silent=false: sends a NEW message (triggers notification), deletes the old one
  */
 async function sendStickyMenu(chatId, telegramId, text, options = {}, silent = true) {
     const user = db.prepare('SELECT lastMessageId FROM users WHERE telegramId = ?').get(String(telegramId));
@@ -50,7 +63,6 @@ async function sendStickyMenu(chatId, telegramId, text, options = {}, silent = t
     };
 
     if (silent && oldMessageId) {
-        // Quiet update: edit in-place, no notification
         try {
             await bot.editMessageText(text, {
                 chat_id: chatId,
@@ -58,23 +70,19 @@ async function sendStickyMenu(chatId, telegramId, text, options = {}, silent = t
                 parse_mode: 'Markdown',
                 reply_markup: replyMarkup,
             });
-            return; // Success — no need to send a new message
+            return;
         } catch (err) {
-            // If edit fails (e.g. message was deleted by user), fall through to sending new
+            // Edit failed (message deleted by user) — fall through to sending new
         }
     }
 
-    // Loud or edit failed: send a NEW message (triggers push notification)
     const sent = await bot.sendMessage(chatId, text, {
         parse_mode: 'Markdown',
         reply_markup: replyMarkup,
         ...options,
     });
 
-    // Delete the OLD sticky message after sending the new one
     clearOldStickyMessage(chatId, oldMessageId);
-
-    // Remember the new message
     saveLastMessageId(telegramId, sent.message_id);
 }
 
@@ -88,57 +96,47 @@ function initBot(miniAppUrl) {
 
     bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-    // ── /start command (handles invite token deep links) ─────────────────────
+    // ── /start command ────────────────────────────────────────────────────────
     bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
         const chatId = msg.chat.id;
         const telegramId = String(msg.from.id);
         const name = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ');
         const token = match[1]?.trim();
 
-        // Delete the /start command message
         deleteUserMessage(chatId, msg.message_id);
 
         const user = upsertUser(telegramId, name);
+        const lang = getUserLang(user, msg.from);
+        const s = t(lang);
 
         if (token) {
-            // Handle invite token
             const invite = db.prepare(
                 "SELECT * FROM invite_tokens WHERE token = ? AND usedAt IS NULL AND expiresAt > datetime('now')"
             ).get(token);
 
-            if (!invite) {
-                return sendStickyMenu(chatId, telegramId, '❌ This invite link is invalid or has expired.', {}, false);
-            }
+            if (!invite) return sendStickyMenu(chatId, telegramId, s.invalidInvite, {}, false);
 
             const inviter = db.prepare('SELECT * FROM users WHERE id = ?').get(invite.inviterId);
-            if (!inviter) {
-                return sendStickyMenu(chatId, telegramId, '❌ Invite is no longer valid.', {}, false);
-            }
+            if (!inviter) return sendStickyMenu(chatId, telegramId, s.inviteGone, {}, false);
 
-            // Check if relationship already exists
             const existing = db.prepare(
                 'SELECT id FROM relationships WHERE clientId = ? AND therapistId = ?'
-            ).get(invite.inviteType === 'invite_therapist' ? invite.inviterId : user.id,
-                invite.inviteType === 'invite_therapist' ? user.id : invite.inviterId);
+            ).get(
+                invite.inviteType === 'invite_therapist' ? invite.inviterId : user.id,
+                invite.inviteType === 'invite_therapist' ? user.id : invite.inviterId
+            );
+            if (existing) return sendStickyMenu(chatId, telegramId, s.alreadyConnected, {}, false);
+            if (invite.inviterId === user.id) return sendStickyMenu(chatId, telegramId, s.selfInvite, {}, false);
 
-            if (existing) {
-                return sendStickyMenu(chatId, telegramId, '✅ You are already connected!', {}, false);
-            }
-
-            if (invite.inviterId === user.id) {
-                return sendStickyMenu(chatId, telegramId, '⚠️ You cannot accept your own invite.', {}, false);
-            }
-
-            // Set role and complete onboarding
             let role, welcomeMsg;
             if (invite.inviteType === 'invite_therapist') {
                 role = 'therapist';
                 db.prepare("UPDATE users SET role = 'therapist', onboardingStatus = 'completed' WHERE id = ?").run(user.id);
-                welcomeMsg = `✅ Connected! You are now the therapist for *${inviter.name}*.\n\nOpen your journal below 👇`;
+                welcomeMsg = s.inviteAsTherapist(inviter.name);
             } else {
                 role = 'client';
                 db.prepare("UPDATE users SET role = 'client', onboardingStatus = 'completed' WHERE id = ?").run(user.id);
-                welcomeMsg = `👋 Hello, *${name}*!\n\nYou have been invited by your therapist, *${inviter.name}*, to use the Emotional Journal. 🌊\n\nThis app is designed to help you track your daily emotions, which can be shared with your therapist during your sessions.\n\nOpen your journal below to get started:`;
+                welcomeMsg = s.inviteAsClient(name, inviter.name);
             }
 
             db.prepare('INSERT INTO relationships (clientId, therapistId) VALUES (?, ?)').run(
@@ -147,34 +145,33 @@ function initBot(miniAppUrl) {
             );
             db.prepare("UPDATE invite_tokens SET usedAt = datetime('now') WHERE id = ?").run(invite.id);
 
-            return sendStickyMenu(chatId, telegramId, welcomeMsg, {}, false);
+            return sendStickyMenu(chatId, telegramId, welcomeMsg, {
+                reply_markup: {
+                    inline_keyboard: [[{ text: s.openJournal, web_app: { url: miniAppUrl } }]]
+                }
+            }, false);
         }
 
-        // Normal /start — check onboarding status
+        // Normal /start — check onboarding
         if (user.onboardingStatus === 'pending_role') {
-            return sendStickyMenu(chatId, telegramId,
-                `👋 Hello, *${name}*! Welcome to your Emotional Journal.\n\nBefore we begin, how do you plan to use this app?`,
-                {
-                    reply_markup: {
-                        inline_keyboard: [
-                            [{ text: '🧠 I am a Professional (Therapist)', callback_data: 'role_therapist' }],
-                            [{ text: '📝 I am using it for my Personal diary', callback_data: 'role_client' }]
-                        ]
-                    }
-                },
-                false // Always loud on first contact
-            );
+            return sendStickyMenu(chatId, telegramId, s.welcomeNew(name), {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: s.roleTherapist, callback_data: 'role_therapist' }],
+                        [{ text: s.roleClient, callback_data: 'role_client' }]
+                    ]
+                }
+            }, false);
         }
 
-        // Normal /start — welcome back
-        sendStickyMenu(chatId, telegramId,
-            `👋 Hello, *${name}*! Welcome back.\n\nSend me any message to save a journal entry, or open your journal directly:`,
-            {},
-            false // Loud: ensure they get notified in case they forgot about the app
-        );
+        sendStickyMenu(chatId, telegramId, s.welcomeBack(name), {
+            reply_markup: {
+                inline_keyboard: [[{ text: s.openJournal, web_app: { url: miniAppUrl } }]]
+            }
+        }, false);
     });
 
-    // ── Handle role selection callbacks ──────────────────────────────────────
+    // ── Role selection callbacks ──────────────────────────────────────────────
     bot.on('callback_query', async (query) => {
         const chatId = query.message.chat.id;
         const telegramId = String(query.from.id);
@@ -185,21 +182,19 @@ function initBot(miniAppUrl) {
             db.prepare("UPDATE users SET role = ?, onboardingStatus = 'completed' WHERE telegramId = ?")
                 .run(role, telegramId);
 
-            const msg = role === 'therapist'
-                ? "✅ Professional mode activated. You can now invite clients and manage their journals."
-                : "✅ Personal mode activated. Send me any message to start your diary!";
+            const user = db.prepare('SELECT * FROM users WHERE telegramId = ?').get(telegramId);
+            const lang = getUserLang(user, query.from);
+            const s = t(lang);
+
+            const confirmMsg = (role === 'therapist' ? s.therapistModeOn : s.clientModeOn) + s.openAppBelow;
 
             bot.answerCallbackQuery(query.id);
-            // Edit the existing onboarding message (it's already sticky at this point)
-            bot.editMessageText(msg + "\n\n👇 Open your app below:", {
+            bot.editMessageText(confirmMsg, {
                 chat_id: chatId,
                 message_id: query.message.message_id,
                 parse_mode: 'Markdown',
                 reply_markup: {
-                    inline_keyboard: [[{
-                        text: '📖 Open Journal',
-                        web_app: { url: miniAppUrl }
-                    }]]
+                    inline_keyboard: [[{ text: s.openJournal, web_app: { url: miniAppUrl } }]]
                 }
             }).catch(() => { });
         }
@@ -209,7 +204,7 @@ function initBot(miniAppUrl) {
         }
     });
 
-    // ── All other text messages → save as journal entry ───────────────────────
+    // ── All text messages → save as journal entry ─────────────────────────────
     bot.on('message', async (msg) => {
         if (!msg.text || msg.text.startsWith('/')) return;
 
@@ -217,10 +212,11 @@ function initBot(miniAppUrl) {
         const telegramId = String(msg.from.id);
         const name = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ');
 
-        // Delete the user's message immediately for a clean chat
         deleteUserMessage(chatId, msg.message_id);
 
         const user = upsertUser(telegramId, name);
+        const lang = getUserLang(user, msg.from);
+        const s = t(lang);
 
         const today = new Date().toISOString().split('T')[0];
         const result = db.prepare(
@@ -228,23 +224,18 @@ function initBot(miniAppUrl) {
         ).run(user.id, msg.text, today);
 
         const entryId = result.lastInsertRowid;
-        const dateLabel = new Date().toLocaleDateString('en-GB', {
+        const dateLabel = new Date().toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-GB', {
             day: 'numeric', month: 'long', year: 'numeric'
         });
 
-        // Quietly edit the existing sticky message — no push notification
-        sendStickyMenu(chatId, telegramId,
-            `✅ Entry saved for *${dateLabel}*.\n\nSend another message to keep writing, or open the journal to see your full day:`,
-            {
-                reply_markup: {
-                    inline_keyboard: [[{
-                        text: '📖 View entry',
-                        web_app: { url: `${miniAppUrl}?startapp=entry_${entryId}` }
-                    }]]
-                }
-            },
-            true // Silent edit
-        );
+        sendStickyMenu(chatId, telegramId, s.entrySaved(dateLabel), {
+            reply_markup: {
+                inline_keyboard: [[{
+                    text: s.viewEntry,
+                    web_app: { url: `${miniAppUrl}?startapp=entry_${entryId}` }
+                }]]
+            }
+        }, true);
 
         notifyTherapistsOfNewEntry(user.id, name, entryId);
     });
@@ -261,7 +252,7 @@ function notifyTherapistsOfNewEntry(userId, userName, entryId) {
     if (!bot) return;
 
     const therapists = db.prepare(`
-      SELECT u.telegramId, u.lastMessageId, ns.therapistMode
+      SELECT u.telegramId, u.lastMessageId, u.lang, ns.therapistMode
       FROM relationships r
       JOIN users u ON u.id = r.therapistId
       LEFT JOIN notification_settings ns ON ns.userId = r.therapistId
@@ -275,22 +266,19 @@ function notifyTherapistsOfNewEntry(userId, userName, entryId) {
             ).get(therapist.telegramId);
             if (settings && !settings.enabled) continue;
 
-            // Therapist notifications are always loud (new entry = push notification)
+            const s = t(therapist.lang || 'ru');
             const chatId = therapist.telegramId;
             const oldMessageId = therapist.lastMessageId;
 
-            bot.sendMessage(chatId,
-                `📝 *${userName}* just added a new journal entry.`,
-                {
-                    parse_mode: 'Markdown',
-                    reply_markup: {
-                        inline_keyboard: [[{
-                            text: '👁 View entry',
-                            web_app: { url: `${globalMiniAppUrl}?startapp=entry_${entryId}` }
-                        }]]
-                    }
+            bot.sendMessage(chatId, s.newEntryNotif(userName), {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[{
+                        text: s.viewEntryBtn,
+                        web_app: { url: `${globalMiniAppUrl}?startapp=entry_${entryId}` }
+                    }]]
                 }
-            ).then(sent => {
+            }).then(sent => {
                 clearOldStickyMessage(chatId, oldMessageId);
                 saveLastMessageId(therapist.telegramId, sent.message_id);
             }).catch(() => { });

@@ -177,6 +177,6 @@ export const translations = {
 export function getSystemLanguage() {
     const tg = window.Telegram?.WebApp;
     const userLang = tg?.initDataUnsafe?.user?.language_code;
-    const lang = localStorage.getItem('ej-lang') || (userLang?.startsWith('ru') ? 'ru' : 'en');
-    return lang === 'ru' ? 'ru' : 'en';
+    const lang = localStorage.getItem('ej-lang') || (userLang?.startsWith('en') ? 'en' : 'ru');
+    return lang === 'en' ? 'en' : 'ru';
 }

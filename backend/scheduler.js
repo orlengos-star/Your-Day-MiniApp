@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const { db } = require('./db');
+const { t } = require('./bot_i18n');
 
 let botRef = null;
 let stickyMenuFn = null;
@@ -13,13 +14,12 @@ function initScheduler(bot, sendStickyMenu) {
         if (!botRef) return;
 
         const now = new Date();
-        // Calculate current UTC time in minutes since midnight
         const utcMinutesSinceMidnight = now.getUTCHours() * 60 + now.getUTCMinutes();
         const todayUtcDate = now.toISOString().split('T')[0];
 
         // ── Client reminders ─────────────────────────────────────────────────────
         const activeClients = db.prepare(`
-      SELECT u.id, u.telegramId, u.name, 
+      SELECT u.id, u.telegramId, u.name, u.lang,
              COALESCE(ns.reminderTime, '20:00') as reminderTime,
              COALESCE(ns.timezoneOffset, 0) as timezoneOffset,
              COUNT(je.id) as entryCount
@@ -41,30 +41,26 @@ function initScheduler(bot, sendStickyMenu) {
             const currentLocalTimeStr = `${String(localH).padStart(2, '0')}:${String(localM).padStart(2, '0')}`;
 
             if (currentLocalTimeStr !== client.reminderTime) continue;
-
+            const s = t(client.lang || 'ru');
             let text;
             if (client.entryCount === 0) {
-                text = `🕰️ Hey ${client.name}, you haven't written anything today yet.\n\nHow are you feeling? Even a few words can help. 💙`;
+                text = s.reminderNoEntry(client.name);
             } else if (client.entryCount < 3) {
-                text = `🌊 You've written ${client.entryCount} ${client.entryCount === 1 ? 'entry' : 'entries'} today — great start!\n\nWant to add more before the day ends? 📝`;
+                text = s.reminderFewEntries(client.entryCount);
             } else {
-                continue; // Already wrote enough — don't nag
+                continue;
             }
 
-            // Loud: send new message so Telegram delivers a push notification
             stickyMenuFn(client.telegramId, client.telegramId, text, {
                 reply_markup: {
-                    inline_keyboard: [[{
-                        text: '✍️ Write now',
-                        callback_data: 'open_journal'
-                    }]]
+                    inline_keyboard: [[{ text: s.writeNow, callback_data: 'open_journal' }]]
                 }
             }, false).catch(() => { });
         }
 
         // ── Therapist batch digest ────────────────────────────────────────────────
         const activeTherapists = db.prepare(`
-      SELECT u.telegramId, u.id as therapistDbId, 
+      SELECT u.telegramId, u.id as therapistDbId, u.lang,
              COALESCE(ns.batchTime, '18:00') as batchTime,
              COALESCE(ns.timezoneOffset, 0) as timezoneOffset
       FROM users u
@@ -97,6 +93,7 @@ function initScheduler(bot, sendStickyMenu) {
 
             if (newEntries.length === 0) continue;
 
+            const s = t(therapist.lang || 'ru');
             const grouped = {};
             for (const entry of newEntries) {
                 if (!grouped[entry.name]) grouped[entry.name] = 0;
@@ -104,12 +101,11 @@ function initScheduler(bot, sendStickyMenu) {
             }
 
             const summary = Object.entries(grouped)
-                .map(([name, count]) => `• ${name}: ${count} ${count === 1 ? 'entry' : 'entries'}`)
+                .map(([name, count]) => s.digestEntry(name, count))
                 .join('\n');
 
-            // Loud: send new message so therapist gets a push notification
             stickyMenuFn(therapist.telegramId, therapist.telegramId,
-                `📊 *Today's Client Summary*\n\n${summary}\n\nTotal: ${newEntries.length} new ${newEntries.length === 1 ? 'entry' : 'entries'}`,
+                s.digestTitle + '\n\n' + summary + s.digestTotal(newEntries.length),
                 {},
                 false
             ).catch(() => { });

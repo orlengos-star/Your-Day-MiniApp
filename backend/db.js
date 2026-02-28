@@ -101,6 +101,13 @@ try {
 }
 
 try {
+  db.prepare('SELECT lang FROM users LIMIT 1').get();
+} catch (e) {
+  console.log('Migrating database: adding lang to users (default: ru)');
+  db.exec("ALTER TABLE users ADD COLUMN lang TEXT NOT NULL DEFAULT 'ru'");
+}
+
+try {
   db.prepare('SELECT timezoneOffset FROM notification_settings LIMIT 1').get();
 } catch (e) {
   console.log('Migrating database: adding timezoneOffset to notification_settings');
