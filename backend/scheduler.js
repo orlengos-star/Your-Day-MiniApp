@@ -16,14 +16,14 @@ function initScheduler(bot) {
 
         // ── Client reminders ─────────────────────────────────────────────────────
         const clientsToRemind = db.prepare(`
-      SELECT u.telegramId, u.name, ns.reminderTime,
+      SELECT u.telegramId, u.name, COALESCE(ns.reminderTime, '20:00') as reminderTime,
              COUNT(je.id) as entryCount
       FROM users u
-      JOIN notification_settings ns ON ns.userId = u.id
+      LEFT JOIN notification_settings ns ON ns.userId = u.id
       LEFT JOIN journal_entries je ON je.userId = u.id AND je.entryDate = ?
       WHERE u.role = 'client'
-        AND ns.enabled = 1
-        AND ns.reminderTime = ?
+        AND COALESCE(ns.enabled, 1) = 1
+        AND COALESCE(ns.reminderTime, '20:00') = ?
       GROUP BY u.id
     `).all(today, currentTime);
 
