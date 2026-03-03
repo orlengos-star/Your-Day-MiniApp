@@ -248,42 +248,15 @@ function initBot(miniAppUrl) {
     return bot;
 }
 
-function notifyTherapistsOfNewEntry(userId, userName, entryId) {
+function notifyTherapistsOfNewEntry(userId) {
     if (!bot) return;
 
-    const therapists = db.prepare(`
-      SELECT u.telegramId, u.lastMessageId, u.lang, ns.therapistMode
-      FROM relationships r
-      JOIN users u ON u.id = r.therapistId
-      LEFT JOIN notification_settings ns ON ns.userId = r.therapistId
-      WHERE r.clientId = ?
-    `).all(userId);
-
-    for (const therapist of therapists) {
-        if (therapist.therapistMode === 'per_client' || !therapist.therapistMode) {
-            const settings = db.prepare(
-                'SELECT enabled FROM notification_settings WHERE userId = (SELECT id FROM users WHERE telegramId = ?)'
-            ).get(therapist.telegramId);
-            if (settings && !settings.enabled) continue;
-
-            const s = t(therapist.lang || 'ru');
-            const chatId = therapist.telegramId;
-            const oldMessageId = therapist.lastMessageId;
-
-            bot.sendMessage(chatId, s.newEntryNotif(userName), {
-                parse_mode: 'Markdown',
-                reply_markup: {
-                    inline_keyboard: [[{
-                        text: s.viewEntryBtn,
-                        web_app: { url: `${globalMiniAppUrl}?startapp=entry_${entryId}` }
-                    }]]
-                }
-            }).then(sent => {
-                clearOldStickyMessage(chatId, oldMessageId);
-                saveLastMessageId(therapist.telegramId, sent.message_id);
-            }).catch(() => { });
-        }
-    }
+    // We don't send anything now. We just set/reset the 30-minute window for all connected therapists
+    db.prepare(`
+      UPDATE relationships 
+      SET pendingNotificationAt = datetime('now', '+30 minutes')
+      WHERE clientId = ?
+    `).run(userId);
 }
 
 module.exports = { initBot, getBot, notifyTherapistsOfNewEntry, sendStickyMenu };

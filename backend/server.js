@@ -124,7 +124,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
         const { sendStickyMenu } = require('./bot');
         const bot = initBot(MINI_APP_URL);
         if (bot) {
-            initScheduler(bot, sendStickyMenu);
+            initScheduler(bot, sendStickyMenu, MINI_APP_URL);
             console.log('🤖 Bot and Scheduler initialized successfully');
         }
     } catch (err) {

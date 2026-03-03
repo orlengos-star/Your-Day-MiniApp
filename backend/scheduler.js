@@ -4,10 +4,12 @@ const { t } = require('./bot_i18n');
 
 let botRef = null;
 let stickyMenuFn = null;
+let globalAppUrl = '';
 
-function initScheduler(bot, sendStickyMenu) {
+function initScheduler(bot, sendStickyMenu, miniAppUrl) {
     botRef = bot;
     stickyMenuFn = sendStickyMenu;
+    globalAppUrl = miniAppUrl;
 
     // Run every minute — check who needs a reminder right now
     cron.schedule('* * * * *', async () => {
@@ -109,6 +111,46 @@ function initScheduler(bot, sendStickyMenu) {
                 {},
                 false
             ).catch(() => { });
+        }
+
+        // ── Pending batched notifications ─────────────────────────────────────────
+        const pendingBatches = db.prepare(`
+            SELECT r.id, r.clientId, r.therapistId, 
+                   u_client.name as clientName,
+                   u_therapist.telegramId as therapistTelegramId,
+                   u_therapist.lang as therapistLang
+            FROM relationships r
+            JOIN users u_client ON u_client.id = r.clientId
+            JOIN users u_therapist ON u_therapist.id = r.therapistId
+            WHERE r.pendingNotificationAt IS NOT NULL 
+              AND r.pendingNotificationAt <= datetime('now')
+        `).all();
+
+        for (const batch of pendingBatches) {
+            const entriesCount = db.prepare(`
+                SELECT COUNT(*) as count 
+                FROM journal_entries 
+                WHERE userId = ? AND entryDate = ?
+            `).get(batch.clientId, todayUtcDate).count;
+
+            if (entriesCount > 0) {
+                const s = t(batch.therapistLang || 'ru');
+                const text = s.batchedEntryNotif(batch.clientName, entriesCount);
+
+                // Send a loud sticky menu
+                stickyMenuFn(batch.therapistTelegramId, batch.therapistTelegramId, text, {
+                    reply_markup: {
+                        inline_keyboard: [[{
+                            text: s.viewDiaryBtn,
+                            // We use a general startapp param to open the client's diary
+                            web_app: { url: `${globalAppUrl}?startapp=client_${batch.clientId}` }
+                        }]]
+                    }
+                }, false).catch(() => { });
+            }
+
+            // Clear the timer
+            db.prepare("UPDATE relationships SET pendingNotificationAt = NULL WHERE id = ?").run(batch.id);
         }
     });
 

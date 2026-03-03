@@ -108,6 +108,13 @@ try {
 }
 
 try {
+  db.prepare('SELECT pendingNotificationAt FROM relationships LIMIT 1').get();
+} catch (e) {
+  console.log('Migrating database: adding pendingNotificationAt to relationships');
+  db.exec('ALTER TABLE relationships ADD COLUMN pendingNotificationAt DATETIME DEFAULT NULL');
+}
+
+try {
   db.prepare('SELECT timezoneOffset FROM notification_settings LIMIT 1').get();
 } catch (e) {
   console.log('Migrating database: adding timezoneOffset to notification_settings');

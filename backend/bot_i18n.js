@@ -36,7 +36,9 @@ const botStrings = {
 
         // Therapist notifications
         newEntryNotif: (clientName) => `📝 *${clientName}* только что добавил новую запись в дневник.`,
+        batchedEntryNotif: (clientName, count) => `📝 *${clientName}* добавил ${count} ${count === 1 ? 'запись' : count < 5 ? 'записи' : 'записей'} в дневник.`,
         viewEntryBtn: '👁 Посмотреть',
+        viewDiaryBtn: '📅 Открыть дневник',
 
         // Therapist batch digest
         digestTitle: '📊 *Сводка за сегодня*',
@@ -76,7 +78,9 @@ const botStrings = {
 
         // Therapist notifications
         newEntryNotif: (clientName) => `📝 *${clientName}* just added a new journal entry.`,
+        batchedEntryNotif: (clientName, count) => `📝 *${clientName}* added ${count} ${count === 1 ? 'entry' : 'entries'} to the diary.`,
         viewEntryBtn: '👁 View entry',
+        viewDiaryBtn: '📅 Open diary',
 
         // Therapist batch digest
         digestTitle: '📊 *Today\'s Client Summary*',

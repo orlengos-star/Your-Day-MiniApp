@@ -99,7 +99,7 @@ router.post('/', (req, res) => {
     const entry = db.prepare('SELECT * FROM journal_entries WHERE id = ?').get(entryId);
 
     // Notify connected therapists
-    notifyTherapistsOfNewEntry(user.id, user.name, entryId);
+    notifyTherapistsOfNewEntry(user.id);
 
     res.status(201).json(entry);
 });
